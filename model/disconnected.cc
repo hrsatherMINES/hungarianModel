@@ -4,29 +4,52 @@
 
 
 using namespace ns3;
-//global/experiment variables
+// Global/experiment variables
 
 int num_connected_components;
-std::vector<int> comp_breakdown; //how the connected components are broken down
+std::vector<int> comp_breakdown; // How the connected components are broken down
 std::vector<bool> agents_moving;
 
 string delim = ",";
 
-//For randomized (but reproducible) experiments
+// For randomized (but reproducible) experiments
 Ptr<UniformRandomVariable> rand_stream;
 int seed;
 int run;
 
-namespace ns3
-{
+namespace ns3{
 
 NS_LOG_COMPONENT_DEFINE("DisconnectedSwarmSim");
 
+// Different heuristics for determining which info is needed
+void determine_all_needed_info_original(std::vector<AgentNode> &all_a){
+    for (unsigned long int i=0; i < all_a.size(); i++){
+        all_a[i].agent->determine_needed_info_original();
+    }
+}
 
+void determine_all_needed_info_still_moving(std::vector<AgentNode> &all_a){
+    for (unsigned long int i=0; i < all_a.size(); i++){
+        all_a[i].agent->determine_needed_info_still_moving();
+    }
+}
 
+void determine_all_needed_info_self_moving(std::vector<AgentNode> &all_a){
+    for (unsigned long int i=0; i < all_a.size(); i++){
+        all_a[i].agent->determine_needed_info_self_not_assigned();
+    }
+}
 
-void Task::update_location(double x, double y, double z){
-    task_location=Vector (x, y, z);
+void determine_all_needed_info_both_moving(std::vector<AgentNode> &all_a){
+    for (unsigned long int i=0; i < all_a.size(); i++){
+        all_a[i].agent->determine_needed_info_both_moving();
+    }
+}
+
+void determine_all_needed_info_distance(std::vector<AgentNode> &all_a){
+    for (unsigned long int i=0; i < all_a.size(); i++){
+        all_a[i].agent->determine_needed_info_distance();
+    }
 }
 
 double euc_dist(Vector t_pos, Vector a_pos){
@@ -76,19 +99,30 @@ std::vector<Task> create_tasks(){
     return all_tasks;
 }
 
+bool** create_who_requested(){
+    bool** arr = new bool*[globalInfo::numAgents];
+    for (int j=0; j < globalInfo::numAgents; j++){
+        arr[j] = new bool[globalInfo::numAgents];
+    }
+    // Initialize with false
+    for (int j=0; j < globalInfo::numAgents; j++){
+        for (int i=0; i < globalInfo::numAgents; i++){
+            arr[j][i] = false;
+        }
+    }
+    return arr;
+}
+
 std::vector<Agent*> create_agents(){
     std::vector<Agent*> all_agents;
     for (int i=0; i < globalInfo::numAgents; i++){
-        //set received messages to null
+        // Set received messages to null
         Agent* tempAgent = new Agent();
-
-        tempAgent->numAgents = globalInfo::numAgents;
-        
-        //no messages sent
+        // No messages sent
         tempAgent->num_position_messages_sent=0;
         tempAgent->num_request_messages_sent=0;
-        tempAgent->num_score_info_messages_sent=0;
-        // //other initialization
+        tempAgent->numAgents = globalInfo::numAgents;
+        // Other initialization
         tempAgent->agent_id=i;
         tempAgent->distance_traveled=0; //initialize
         tempAgent->distance_left=0; //set to actual value after assignment
@@ -96,16 +130,14 @@ std::vector<Agent*> create_agents(){
         tempAgent->initialize_partial_assignment();
         tempAgent->initialize_info_requests();
         tempAgent->initialize_known_positions();
+        tempAgent->initialize_needed_info();
         tempAgent->initialize_known_info();
         tempAgent->initialize_cinfo();
         tempAgent->initialize_received_times();
+        tempAgent->initialize_sent_times();
         tempAgent->have_all_needed_info=false;
-        //construct 2D who_requested array
-        bool** arr = new bool*[globalInfo::numAgents];
-        for (int j=0; j < globalInfo::numAgents; j++){
-            arr[j] = new bool[globalInfo::numAgents];
-        }
-        tempAgent->who_requested = arr;
+        // Construct 2D who_requested array
+        tempAgent->who_requested = create_who_requested();
         all_agents.push_back(tempAgent);
         globalInfo::instrument_assignment.at(i)=tempAgent->instrument_type;
         
@@ -126,7 +158,7 @@ void calculate_all_costs(std::vector<TaskNode> allTasks, std::vector<AgentNode> 
 }
 
 std::vector<std::vector<double>> create_cmatrix(std::vector<AgentNode> &all_a){
-    //just copy data over into 2D vector for hungarian method
+    // Just copy data over into 2D vector for hungarian method
     std::vector<std::vector<double>> all_costs;
     for (unsigned long int i=0; i < globalInfo::allAgents.size(); i++){
         std::vector<double> one_row;
@@ -138,16 +170,8 @@ std::vector<std::vector<double>> create_cmatrix(std::vector<AgentNode> &all_a){
     return all_costs;
 }
 
-
-
-void initialize_all_needed_info(std::vector<AgentNode> &all_a){
-    for (unsigned long int i=0; i < all_a.size(); i++){
-        all_a[i].agent->initialize_needed_info();
-    }
-}
-
-//fill in initial request array with needed info (more will be added once shared)
-//also set up previous sent request
+// Fill in initial request array with needed info (more will be added once shared)
+// Also set up previous sent request
 void initialize_all_requests(std::vector<AgentNode> &all_a){
     for (unsigned long int i=0; i < all_a.size(); i++){
         for (unsigned long int j=0; j < all_a.size(); j++){
@@ -157,13 +181,20 @@ void initialize_all_requests(std::vector<AgentNode> &all_a){
     }
 }
 
+void add_own_request_to_request_list(std::vector<AgentNode> &all_a){
+    for (unsigned long int i=0; i < all_a.size(); i++){
+        send_request newRequest = all_a[i].agent->create_send_request();
+        all_a[i].agent->received_requests.push_back(newRequest);
+    }
+}
+
 ///////////////////////////////////////////////////////////////////////////
-//Functions to free up memory
+// Functions to free up memory
 
 void delete_request_message(send_request* mess){
-    //delete array first
+    // Delete array first
     delete [] mess->request;
-    //delete message
+    // Delete message
     delete mess;
 }
 
@@ -175,23 +206,19 @@ void delete_who_requested(bool** arr){
 }
 
 ///////////////////////////////////////////////////////////////////////////
-//Data dissemination related functions
+// Data dissemination related functions
 
-//each agent will share its current request vector with each of its neighbors
-void initial_request_sharing(std::vector<AgentNode> &all_a, Ipv4InterfaceContainer interface){
+// Each agent will share its current request vector with each of its neighbors
+void all_send_requests(std::vector<AgentNode> &all_a, Ipv4InterfaceContainer interface){
     for (unsigned long int i=0; i < all_a.size(); i++){
-        all_a[i].agent->num_request_messages_sent++;
         for (unsigned long int j=0; j < all_a.size(); j++){
-            //if (comm_g[i][j]){
-              if(i != j){
-                send_request_info(all_a[i], all_a[j], interface); //TODO SEND OVER NS3
-              }
-            //}
+            if(i != j){
+                if(all_a[i].agent->needed_info[j]){
+                    send_request_info(all_a[i], all_a[j], interface);
+                }
+            }
         }
     }
-
-    //now everyone performs merge function on all received requests
-    merge_all_received_requests(all_a);
 }
 
 double fRand(double fMin, double fMax){
@@ -222,7 +249,7 @@ void moveAllPositions(NodeContainer robots){
   }
 }
 
-//check if request has changed since it was last sent
+// Check if request has changed since it was last sent
 bool compare_bool_arr(bool* prev, bool* req){
     for (unsigned long int i=0; i < globalInfo::allAgents.size(); i++){
         if (prev[i]!=req[i]) return false;
@@ -234,19 +261,19 @@ bool check_if_agent_has_needed_info(Agent *ag){
     if (ag->have_all_needed_info){
         return true;
     }
-    else //iterate through and needed_info and compare to known_info to check if status needs to be updated
+    else // Iterate through and needed_info and compare to known_info to check if status needs to be updated
     {
         for (int i=0; i < ag->numAgents; i++){
             if (!(ag->needed_info[i])){
                 continue; //move onto next
             }
-            //if needed but doesn't know it then return false
+            // If needed but doesn't know it then return false
             else if (ag->needed_info[i] && !ag->known_info[i]){
                 return false;
             }
-            //other case is that it has the info it needs
+            // Other case is that it has the info it needs
         }
-        //if it gets here it has all the info it needs
+        // If it gets here it has all the info it needs
         ag->have_all_needed_info=true;
         return true;
     }
@@ -255,54 +282,47 @@ bool check_if_agent_has_needed_info(Agent *ag){
 bool check_all_needed_info(std::vector<AgentNode> &all_a){
     for (unsigned long int i=0; i < all_a.size(); i++){
         bool curr_verdict = check_if_agent_has_needed_info(all_a[i].agent);
-        if (!curr_verdict){ //an agent does not have all needed info
+        if (!curr_verdict){ // An agent does not have all needed info
             return false;
         }
     }
-    return true; // only gets here if all agents report true
+    return true; // Only gets here if all agents report true
 }
 
-//determines if an agent has any position information that a neighbor requested
-//fills the position message buffer with messages to send
+// Determines if an agent has any position information that a neighbor requested
+// Fills the position message buffer with messages to send
 void determine_position_messages_to_send(AgentNode ag){
-    //to store which info agent needs to send
-    //int curr_ag = ag.agent->agent_id;
-
     for (int i=0; i < ag.agent->numAgents; i++){
-        //if(comm_g[curr_ag][i]){ //check communication
-            for (int j=0; j < ag.agent->numAgents; j++){
-                //if we have the info and a neighbor requested it
-                if ((ag.agent->known_info[j]) && (ag.agent->who_requested[i][j])){
-                    ag.agent->which_positions_to_send[j]=true;
-                    //since we are going to send it to that particular agent
-                    //mark their request as fulfilled
-                    ag.agent->who_requested[i][j]=false;
-                    ag.agent->info_requests[j]=false; //don't need to request info we have and have sent out
-                }
+        for (int j=0; j < ag.agent->numAgents; j++){
+            // If we have the info and a neighbor requested it
+            if ((ag.agent->known_info[j]) && (ag.agent->who_requested[i][j])){
+                ag.agent->which_positions_to_send[j]=true;
+                // Since we are going to send it to that particular agent
+                // Mark their request as fulfilled
+                ag.agent->who_requested[i][j]=false;
+                ag.agent->info_requests[j]=false;  // Don't need to request info we have and have sent out
             }
-        //}
+        }
     }
 }
 
-//determines if an agent has any position information that a neighbor requested
-//fills the position message buffer with messages to send
+// Determines if an agent has any position information that a neighbor requested
+// Fills the position message buffer with messages to send
 void determine_to_send_all_information(Agent *ag){
-    //to store which info agent needs to send
+    // To store which info agent needs to send
     //int curr_ag = ag->agent_id;
 
     for (unsigned long int i=0; i < globalInfo::allAgents.size(); i++){
-        //if(comm_g[curr_ag][i]){
-            for (unsigned long int j=0; j< globalInfo::allAgents.size(); j++){
-                //if we have the info and a neighbor requested it
-                if (ag->known_info[j]){
-                    ag->which_positions_to_send[j]=true;
-                    //since we are going to send it to that particular agent
-                    //mark their request as fulfilled
-                    ag->who_requested[i][j]=false;
-                    ag->info_requests[j]=false; //don't need to request info we have and have sent out
-                }
+        for (unsigned long int j=0; j< globalInfo::allAgents.size(); j++){
+            // If we have the info and a neighbor requested it
+            if (ag->known_info[j]){
+                ag->which_positions_to_send[j]=true;
+                // Since we are going to send it to that particular agent
+                // Mark their request as fulfilled
+                ag->who_requested[i][j]=false;
+                ag->info_requests[j]=false;  // Don't need to request info we have and have sent out
             }
-        //}
+        }
     }
 }
 
@@ -310,22 +330,19 @@ void send_position_messages_in_buffer(int curr_ag, std::vector<AgentNode> &all_a
     for (unsigned long int i=0; i < all_a.size(); i++){
         if (all_a[curr_ag].agent->which_positions_to_send[i]){
             all_a[curr_ag].agent->which_positions_to_send[i]=false;
-            all_a[curr_ag].agent->num_position_messages_sent++;
 
-            //broadcast message to neighbors
+            // Broadcast message to neighbors
             for(unsigned long int j=0; j < all_a.size(); j++){
-                //if (comm_g[curr_ag][j]){//if j is a neighbor
                 if((int)j != curr_ag){
                     send_position_info(all_a[curr_ag], all_a[j], i, interface);
                 }
-                //}
             }
         }
     }
 }
 
 void all_send_position_info(std::vector<AgentNode> &all_a, Ipv4InterfaceContainer interface){
-    //have all agents determine what to send and then send it out
+    // Have all agents determine what to send and then send it out
     for (unsigned long int i=0; i < all_a.size(); i++){
         determine_position_messages_to_send(all_a[i]);
         send_position_messages_in_buffer(i, all_a, interface);
@@ -336,7 +353,7 @@ void all_send_position_info(std::vector<AgentNode> &all_a, Ipv4InterfaceContaine
 }
 
 void all_send_all_position_info(std::vector<AgentNode> &all_a, Ipv4InterfaceContainer interface){
-    //have all agents send everything they know. Good for debugging
+    // Have all agents send everything they know. Good for debugging
     for (unsigned long int i=0; i < all_a.size(); i++){
         determine_to_send_all_information(all_a[i].agent);
         send_position_messages_in_buffer(i, all_a, interface);
@@ -348,13 +365,13 @@ void all_send_all_position_info(std::vector<AgentNode> &all_a, Ipv4InterfaceCont
 
 
 ////////////////////////////////////////////////////////////////////////
-//Partial Assignment related functions
+// Partial Assignment related functions
 
-//Once information has been disseminated need to compute partial assignments
+// Once information has been disseminated need to compute partial assignments
 double compute_partial_assignment_hungarian(Agent *ag, std::vector<TaskNode> &all_tasks){
     std::vector<vector<double>> cost_mat;
-    std::vector<int> task_locs; //will store indices of tasks
-    std::vector<int> agents_needed; //will store indices of agents
+    std::vector<int> task_locs;  // Will store indices of tasks
+    std::vector<int> agents_needed;  // Will store indices of agents
 
     int curr_instrument = ag->instrument_type;
     for (int i=0; i < ag->numAgents; i++){
@@ -363,9 +380,9 @@ double compute_partial_assignment_hungarian(Agent *ag, std::vector<TaskNode> &al
         }
     }
 
-    //fill in agents_needed vector
-    //Basically just add agents of the same instrument class
-    //determine if that information is known when filling in matrix
+    // Fill in agents_needed vector
+    // Basically just add agents of the same instrument class
+    // Determine if that information is known when filling in matrix
     int curr_inst = ag->instrument_type;
     for (int i=0; i < ag->numAgents; i++){
         if (globalInfo::instrument_assignment[i]==curr_inst){
@@ -373,7 +390,7 @@ double compute_partial_assignment_hungarian(Agent *ag, std::vector<TaskNode> &al
         }
     }
     
-    //will be numAgents_in_instrument_class x numTasks_for_class big (square)
+    // Will be numAgents_in_instrument_class x numTasks_for_class big (square)
     for (int i=0; i < globalInfo::agents_per_class; i++){
         std::vector<double> one_row (globalInfo::agents_per_class, INT_MAX);
         cost_mat.push_back(one_row);
@@ -382,9 +399,9 @@ double compute_partial_assignment_hungarian(Agent *ag, std::vector<TaskNode> &al
     int num_ts = task_locs.size();
     int num_needed= agents_needed.size();
     //std::cout << numTasks << " " << num_needed << std::endl;
-    //now fill in the smaller cost matrix using the big one
-    //at this point all agents should have the information they need to compute the scores they need
-    //to save time (rather than to recompute) just grab info from costMatrix (used for optimal)
+    // Now fill in the smaller cost matrix using the big one
+    // At this point all agents should have the information they need to compute the scores they need
+    // To save time (rather than to recompute) just grab info from costMatrix (used for optimal)
     for (int i=0; i < num_needed; i++){
         int curr_ag_id =agents_needed[i];
         if (ag->known_info[curr_ag_id]){
@@ -396,15 +413,15 @@ double compute_partial_assignment_hungarian(Agent *ag, std::vector<TaskNode> &al
             }
         }
     }
-    //check to see that matrix is filled in correctly
+    // Check to see that matrix is filled in correctly
     //print_small_cost_mat(cost_mat);
 
-    //now use the smaller matrix to compute an assignment using hungarian method
+    // Now use the smaller matrix to compute an assignment using hungarian method
     HungarianAlgorithm partialHungarian;
     std::vector<int> unmapped_partialAssignment;
     double partial_cost = partialHungarian.Solve(cost_mat, unmapped_partialAssignment);
 
-    //now map the partial assignment back to the actual
+    // Now map the partial assignment back to the actual
     for (int i = 0; i < num_needed; i++){
         int curr_ag, curr_task;
         curr_ag=agents_needed[i];
@@ -433,7 +450,7 @@ void compute_all_parital_assignments_hungarian(std::vector<AgentNode> &all_ags, 
 void write_initial_positions_to_file(std::vector<Agent> &all_ags, std::vector<Task> &all_ts){
     std::fstream output ("TA_sim.csv", output.out | output.app);
 
-    //first write the positions of tasks
+    // First write the positions of tasks
     for (unsigned long int i=0; i < globalInfo::allTasks.size(); i++){
         Vector pos = all_ts[i].task_location;
         output << all_ts[i].task_id << delim << all_ts[i].instrument_requirement << delim << pos.x << delim << pos.y << delim << pos.z << std::endl;
@@ -461,7 +478,7 @@ void write_file_end(){
 
 
 //////////////////////////////////////////////////////////////////////////
-//Movement related functions
+// Movement related functions
 double vector_magnitude(double x, double y, double z){
     double magnitude = x*x+y*y+z*z;
     magnitude=sqrt(magnitude);
@@ -495,14 +512,14 @@ Vector create_movement_vector(Vector &ag_pos, Vector &task_pos){
 }
 
 void determine_assigned_location(std::vector<AgentNode> &all_ags, std::vector<TaskNode> &all_ts){
-    //fill in each agent's assigned position and movement vector
+    // Fill in each agent's assigned position and movement vector
     for (unsigned long int i=0; i < all_ags.size(); i++){
         int curr_id = all_ags[i].agent->agent_id;
         int assigned_task = all_ags[i].agent->partial_assignment[curr_id];
         all_ags[i].agent->assigned_task_position=all_ts[assigned_task].task->task_location;
         all_ags[i].agent->movement_vec=create_movement_vector(all_ags[i].agent->agent_position, all_ags[i].agent->assigned_task_position);
         Vector diff=diff_Vector(all_ags[i].agent->agent_position, all_ags[i].agent->assigned_task_position);
-        double dist_left=vector_magnitude(diff.x, diff.y, diff.z); //initialize distance left to travel
+        double dist_left=vector_magnitude(diff.x, diff.y, diff.z);  // Initialize distance left to travel
         all_ags[i].agent->distance_left=dist_left;
     }
 }
@@ -554,9 +571,9 @@ void move_all_agents_towards_goal_step(std::vector<AgentNode> &all_ags){
 
 
 ////////////////////////////////////////////////
-//Determine assignment conflicts
+// Determine assignment conflicts
 std::vector<std::vector<int>> global_assignment_info(std::vector<Agent> &all_a){
-    std::vector<std::vector<int>> num_assigned; //stores who is assigned to each task
+    std::vector<std::vector<int>> num_assigned;  // Stores who is assigned to each task
     for (unsigned long int i=0; i < all_a.size(); i++){
         std::vector<int> temp;
         num_assigned.push_back(temp);
@@ -626,7 +643,7 @@ void create_agent_conflict_info(std::vector<std::vector<int>> &g_assignment, std
     for (unsigned long int i=0; i < globalInfo::allAgents.size(); i++){
         //std::cout << i << std::endl;
         if (conflicts[i]){
-            if (all_tasks[i].instrument_requirement==a_type){ //if there is a conflict with the same instrument type
+            if (all_tasks[i].instrument_requirement==a_type){  // If there is a conflict with the same instrument type
                 //std::cout << "true" << std::endl;
                 //std::cout << a.c_info->tasks_in_conflict.size() << std::endl;
                 a.c_info->tasks_in_conflict.push_back(i);
@@ -660,18 +677,51 @@ bool all_agents_assigned(std::vector<AgentNode> &all_a){
     return true;
 }
 
+void checkIfDone(std::vector<AgentNode> allAgents){
+    bool conflicts = conflicts_exist(allAgents);
+    if(!conflicts && all_agents_assigned(allAgents)){
+        double totalDistanceTraveled = total_dist_traveled(allAgents);
+        int numRequestMessages = total_num_request_messages_sent(allAgents);
+        int numPositionMessages = total_num_position_messages_sent(allAgents);
+        std::cout << "SUCCESSFUL: No conflicts, all agents are assigned" << std::endl;
+        std::cout << "Total distance moved: " << totalDistanceTraveled << std::endl;
+        std::cout << "Total request messages: " << numRequestMessages << std::endl;
+        std::cout << "Total position messsages: " << numPositionMessages << std::endl;
+        std::cout << "Total messsages: " << numRequestMessages + numPositionMessages << std::endl;
+        std::cout << "Percentage received: " << (1.0 * globalInfo::totalMessagesReceived) / (1.0*numRequestMessages + 1.0*numPositionMessages) << std::endl;
+        std::cout << "Number of moves: " << globalInfo::numMoves << std::endl;
+        exit(0);
+        return;
+    }
+    if(conflicts){
+        std::cout << "Conflicts Exist" << std::endl;
+    }
+}
 
 ////////////////////////////////////////////////
-//determine distance traveled
-double total_dist_traveled(std::vector<Agent> &all_ags){
+// Find totals
+double total_dist_traveled(std::vector<AgentNode> all_ags){
     double total_dist=0;
     for (unsigned long int i=0; i < all_ags.size(); i++){
-        total_dist+=all_ags[i].distance_traveled;
+        total_dist+=all_ags[i].agent->distance_traveled;
     }
     return total_dist;
 }
 
-
-
-
+int total_num_position_messages_sent(std::vector<AgentNode> all_ags){
+    int totalNumPositionMessages = 0;
+    for (unsigned long int i=0; i < all_ags.size(); i++){
+        totalNumPositionMessages+=all_ags[i].agent->num_position_messages_sent;
+    }
+    return totalNumPositionMessages;
 }
+
+int total_num_request_messages_sent(std::vector<AgentNode> all_ags){
+    int totalNumRequestMessages = 0;
+    for (unsigned long int i=0; i < all_ags.size(); i++){
+        totalNumRequestMessages+=all_ags[i].agent->num_request_messages_sent;
+    }
+    return totalNumRequestMessages;
+}
+
+} //end namespace ns3

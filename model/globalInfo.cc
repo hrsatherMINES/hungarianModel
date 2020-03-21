@@ -6,4 +6,9 @@ namespace ns3 {
     std::vector<int> globalInfo::instrument_assignment;
     int globalInfo::agents_per_class;
     int globalInfo::numAgents;
+    int globalInfo::numTasks;
+    int globalInfo::probabilityDropped;
+    int globalInfo::numMoves;
+    int globalInfo::counter;
+    int globalInfo::totalMessagesReceived;
 }

@@ -2,9 +2,98 @@
 
 using namespace ns3;
 
+// Original heuristic. just ask if same type
+void Agent::determine_needed_info_original(){
+    int type=instrument_type;
+    for (int i=0; i < numAgents; i++){
+        if(globalInfo::instrument_assignment[i]==type && i != agent_id){
+            needed_info[i]=true;
+        }
+        else{
+            needed_info[i]=false;
+        }
+    }
+}
+
+// Only ask info from another node if node is not assigned
+void Agent::determine_needed_info_self_not_assigned(){
+    int type=instrument_type;
+    for (int i=0; i < numAgents; i++){
+        if(globalInfo::instrument_assignment[i]==type && i != agent_id && !isAssigned()){
+            needed_info[i]=true;
+        }
+        else{
+            needed_info[i]=false;
+        }
+    }
+}
+
+// Only ask info from another node if you know its still moving
+void Agent::determine_needed_info_still_moving(){
+    int type=instrument_type;
+    for (int i=0; i < numAgents; i++){
+        if(globalInfo::instrument_assignment[i]==type && i != agent_id && !agentAssigned(i)){
+            needed_info[i]=true;
+        }
+        else{
+            needed_info[i]=false;
+        }
+    }
+}
+
+// Only ask info from another node if node is not assigned AND itself is still moving
+void Agent::determine_needed_info_both_moving(){
+    int type=instrument_type;
+    for (int i=0; i < numAgents; i++){
+        if(globalInfo::instrument_assignment[i]==type && i != agent_id && !isAssigned() && !agentAssigned(i)){
+            needed_info[i]=true;
+        }
+        else{
+            needed_info[i]=false;
+        }
+    }
+}
+
+// Only ask if node is close to itself
+void Agent::determine_needed_info_distance(){
+    int type=instrument_type;
+    for (int i=0; i < numAgents; i++){
+        if(globalInfo::instrument_assignment[i]==type && i != agent_id && !isAssigned() && !agentAssigned(i)){
+            needed_info[i]=true;
+        }
+        else{
+            needed_info[i]=false;
+        }
+    }
+}
+
+bool Agent::isAssigned(){
+    // Assume moving if any vector is above half its speed
+    return abs(agent_position.x - assigned_task_position.x) < speed/2
+            && abs(agent_position.y - assigned_task_position.y) < speed/2
+            && abs(agent_position.z - assigned_task_position.z) < speed/2;
+}
+
+bool Agent::isClose(int which_agent){
+    // If don't know info, assume close
+}
+
+bool Agent::agentAssigned(int which_agent){
+    for(int i = 0; i < numTasks; i++){
+        Vector tempTaskLocation = globalInfo::allTasks.at(i).task->task_location;
+        // If the movement is less than half its speed, assume it did not move
+        if(abs(tempTaskLocation.x - known_positions[which_agent].x) < speed/2
+                && abs(tempTaskLocation.y - known_positions[which_agent].y) < speed/2
+                && abs(tempTaskLocation.z - known_positions[which_agent].z) < speed/2){
+            return true;
+        }
+    }
+    return false;
+}
+
 void Agent::fillLocalCostMatrix(){
     vector<vector<double>> tempCostMatrix;
-    for(int i = 0; i < numTasks; i ++){
+    for(int i = 0; i < numTasks; i++){
         vector<double> agentCosts;
         for(int j = 0; j < numTasks; j++){
             agentCosts.push_back(euc_dist(known_positions[i], globalInfo::allTasks.at(j).task->task_location));
@@ -84,25 +173,30 @@ void Agent::set_num_tasks(int numTasksIn){
     numTasks = numTasksIn;
 }
 
-void Agent::initialize_needed_info(){
-    needed_info = new bool [numAgents];
-    int type=instrument_type;
+void Agent::initialize_received_times(){
+    received_times = new unsigned long int [numAgents];
     for (int i=0; i < numAgents; i++){
-        //verify if they are of the same instrument class and in same component
-        //if((instrument_assignment[i]==type) && (component_arr[i])){
-        if(globalInfo::instrument_assignment[i]==type){
-            needed_info[i]=true;
-        }
-        else{
-            needed_info[i]=false;
-        }
+        received_times[i]=0;
     }
 }
 
-void Agent::initialize_received_times(){
-    received_times = new double [numAgents];
+void Agent::initialize_needed_info(){
+    needed_info = new bool [numAgents];
     for (int i=0; i < numAgents; i++){
-        received_times[i]=0;
+        received_times[i]=false;
+    }
+}
+
+void Agent::initialize_sent_times(){
+    sent_times = new unsigned long*[globalInfo::numAgents];
+    for (int j=0; j < globalInfo::numAgents; j++){
+        sent_times[j] = new unsigned long[globalInfo::numAgents];
+    }
+    // Initialize with false
+    for (int j=0; j < globalInfo::numAgents; j++){
+        for (int i=0; i < globalInfo::numAgents; i++){
+            sent_times[j][i] = 0;
+        }
     }
 }
 
@@ -117,7 +211,7 @@ void Agent::initialize_known_positions(){
     known_positions[agent_id]=agent_position;
 }
 
-//also initialize message buffer
+// Also initialize message buffer
 void Agent::initialize_known_info(){
     known_info = new bool [numAgents];
     memset(known_info, false, numAgents);
@@ -177,11 +271,12 @@ send_request Agent::create_send_request(){
     send_request to_send;
     to_send.sender_id=agent_id;
     bool* request_to_send = new bool[numAgents];
-    //copy request info over
+    // Copy request info over
     for (int i=0; i < numAgents; i++){
         request_to_send[i]=info_requests[i];
     }
     to_send.request=request_to_send;
+    to_send.num_hops=0;
     return to_send;
 }
 
@@ -194,6 +289,7 @@ send_position Agent::create_send_position(int which_agent){
         std::chrono::milliseconds ms =
             std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() );
         to_send.time_sent = ms.count();
+        to_send.position=agent_position;
     }
     else{
         to_send.time_sent=received_times[which_agent];

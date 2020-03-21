@@ -45,7 +45,7 @@ namespace ns3 {
     int all_agents_visited(std::vector<bool> &visit_list);
     void determine_connected_components(std::vector<AgentNode> &all_a, std::vector<std::vector<bool>> &commGraph);
     void fill_in_component_arrs(std::vector<AgentNode> &all_a);
-    void initialize_all_needed_info(std::vector<AgentNode> &all_a);
+    void determine_all_needed_info(std::vector<AgentNode> &all_a);
     void initialize_all_requests(std::vector<AgentNode> &all_a);
     double vector_magnitude(Vector &pos);
     void send_position_info(AgentNode &sender, AgentNode &receiver, int which_agent, Ipv4InterfaceContainer interface);
@@ -91,6 +91,10 @@ namespace ns3 {
     void update_position(AgentNode* ag);
     void move_agent_towards_goal_step(AgentNode ag);
     void fillAllLocalCosts(std::vector<AgentNode> &all_a);
+    int total_num_position_messages_sent(std::vector<AgentNode> all_ags);
+    int total_num_request_messages_sent(std::vector<AgentNode> all_ags);
+    double total_dist_traveled(std::vector<AgentNode> all_ags);
+    void checkIfDone(std::vector<AgentNode> allAgents);
 }
 
 #endif /* DISCONNECTED_EXP_H */

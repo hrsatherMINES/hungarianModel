@@ -11,6 +11,11 @@ namespace ns3 {
     static std::vector<int> instrument_assignment;
     static int agents_per_class;
     static int numAgents;
+    static int numTasks;
+    static int probabilityDropped;
+    static int numMoves;
+    static int counter;
+    static int totalMessagesReceived;
 
     private:
     globalInfo(){}

@@ -19,7 +19,7 @@ namespace ns3 {
         int sender_id;
         int info_id;
         Vector position;
-        long long int time_sent;
+        unsigned long int time_sent;
     };
 
     class TaskNode{
@@ -43,6 +43,7 @@ namespace ns3 {
 
     struct send_request{
         int sender_id;
+        int num_hops;
         bool* request;
     };
 
@@ -51,7 +52,7 @@ namespace ns3 {
         std::vector<int> tasks_in_conflict;
     };
 
-    //Location information
+    // Location information
     struct loc_range{
         int num_agents_in_range;
         int min_x;
@@ -60,7 +61,7 @@ namespace ns3 {
         int max_y;
     };
 
-    //Set up Task class
+    // Set up Task class
     class Task{
         public:
 
@@ -68,8 +69,10 @@ namespace ns3 {
         int instrument_requirement;
         Vector task_location;
 
-        //methods
-        void update_location(double x, double y, double z);
+        // Methods
+        void update_location(double x, double y, double z){
+            task_location=Vector (x, y, z);
+        }
     };
 }
 

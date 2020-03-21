@@ -6,11 +6,11 @@
 #include "ns3/vector.h"
 #include "ns3/structs.h"
 #include "ns3/globalInfo.h"
+#include <thread>
 
 namespace ns3 {
     void ReceivePacket(Ptr<Socket> socket);
     void SendMessage(const char* data, int sizeOfMessage, Ptr<Node> sourceNode, Ptr<Node> desitinationNode, Ipv4InterfaceContainer interface);
-    void send_new_requests(std::vector<AgentNode> &all_a);
     char* serializePositionInfo(send_position position);
     send_position deserializePositionInfo(std::string serialized);
     char* serializeRequestInfo(send_request request);
@@ -24,6 +24,7 @@ namespace ns3 {
     bool isNewRequest(vector<send_request> allRequests, send_request request);
     bool positionsEqual(send_position position1, send_position position2);
     bool isNewPosition(vector<send_request> allRequests, send_request request);
+    bool requests_are_null(char* serializedMessage);
 }
 
 #endif /* AGENT_H */
