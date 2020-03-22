@@ -11,20 +11,20 @@
 namespace ns3 {
     void ReceivePacket(Ptr<Socket> socket);
     void SendMessage(const char* data, int sizeOfMessage, Ptr<Node> sourceNode, Ptr<Node> desitinationNode, Ipv4InterfaceContainer interface);
-    char* serializePositionInfo(send_position position);
-    send_position deserializePositionInfo(std::string serialized);
-    char* serializeRequestInfo(send_request request);
-    send_request deserializeRequestInfo(std::string serialized);
-    void send_request_info(AgentNode &sender, AgentNode &receiver, Ipv4InterfaceContainer interface);
-    void send_position_info(AgentNode &sender, AgentNode &receiver, int which_agent, Ipv4InterfaceContainer interface);
-    void merge_received_requests(Agent *ag);
-    void merge_all_received_requests(std::vector<AgentNode> &all_a);
-    void merge_received_positions(Agent *ag);
-    bool requestsEqual(send_request request1, send_request request2);
-    bool isNewRequest(vector<send_request> allRequests, send_request request);
-    bool positionsEqual(send_position position1, send_position position2);
-    bool isNewPosition(vector<send_request> allRequests, send_request request);
-    bool requests_are_null(char* serializedMessage);
+    char* serializePositionInfo(sendPosition position);
+    sendPosition deserializePositionInfo(std::string serialized);
+    char* serializeRequestInfo(sendRequest request);
+    sendRequest deserializeRequestInfo(std::string serialized);
+    void sendRequestInfo(AgentNode &sender, AgentNode &receiver, Ipv4InterfaceContainer interface);
+    void sendPositionInfo(AgentNode &sender, AgentNode &receiver, int whichAgent, Ipv4InterfaceContainer interface);
+    void mergeReceivedRequests(Agent *ag);
+    void mergeAllReceivedRequests(std::vector<AgentNode> &allAgents);
+    void mergeReceivedPositions(Agent *ag);
+    bool requestsEqual(sendRequest request1, sendRequest request2);
+    bool isNewRequest(vector<sendRequest> allRequests, sendRequest request);
+    bool positionsEqual(sendPosition position1, sendPosition position2);
+    bool isNewPosition(vector<sendRequest> allRequests, sendRequest request);
+    bool requestsAreNull(char* serializedMessage);
 }
 
 #endif /* AGENT_H */

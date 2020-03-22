@@ -8,14 +8,15 @@ namespace ns3 {
     public:
     static std::vector<AgentNode> allAgents;
     static std::vector<TaskNode> allTasks;
-    static std::vector<int> instrument_assignment;
-    static int agents_per_class;
+    static std::vector<int> instrumentAssignment;
+    static int agentsPerClass;
     static int numAgents;
     static int numTasks;
     static int probabilityDropped;
     static int numMoves;
     static int counter;
     static int totalMessagesReceived;
+    static double maxPositionDistance;
 
     private:
     globalInfo(){}

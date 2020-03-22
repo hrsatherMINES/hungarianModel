@@ -3,88 +3,127 @@
 using namespace ns3;
 
 // Original heuristic. just ask if same type
-void Agent::determine_needed_info_original(){
-    int type=instrument_type;
+void Agent::determineNeededInfoOriginal(){
+    int type=instrumentType;
     for (int i=0; i < numAgents; i++){
-        if(globalInfo::instrument_assignment[i]==type && i != agent_id){
-            needed_info[i]=true;
+        if(globalInfo::instrumentAssignment[i] == type
+                                    && i != agentId){
+            neededInfo[i]=true;
         }
         else{
-            needed_info[i]=false;
+            neededInfo[i]=false;
         }
     }
 }
 
 // Only ask info from another node if node is not assigned
-void Agent::determine_needed_info_self_not_assigned(){
-    int type=instrument_type;
+void Agent::determineNeededInfoSelfNotAssigned(){
+    int type=instrumentType;
     for (int i=0; i < numAgents; i++){
-        if(globalInfo::instrument_assignment[i]==type && i != agent_id && !isAssigned()){
-            needed_info[i]=true;
+        if(globalInfo::instrumentAssignment[i] == type
+                                    && i != agentId
+                                    && !isAssigned()){
+            neededInfo[i]=true;
         }
         else{
-            needed_info[i]=false;
+            neededInfo[i]=false;
         }
     }
 }
 
 // Only ask info from another node if you know its still moving
-void Agent::determine_needed_info_still_moving(){
-    int type=instrument_type;
+void Agent::determineNeededInfoStillMoving(){
+    int type=instrumentType;
     for (int i=0; i < numAgents; i++){
-        if(globalInfo::instrument_assignment[i]==type && i != agent_id && !agentAssigned(i)){
-            needed_info[i]=true;
+        if(globalInfo::instrumentAssignment[i] == type
+                                    && i != agentId
+                                    && !agentAssigned(i)){
+            neededInfo[i]=true;
         }
         else{
-            needed_info[i]=false;
+            neededInfo[i]=false;
         }
     }
 }
 
 // Only ask info from another node if node is not assigned AND itself is still moving
-void Agent::determine_needed_info_both_moving(){
-    int type=instrument_type;
+void Agent::determineNeededInfoBothMoving(){
+    int type=instrumentType;
     for (int i=0; i < numAgents; i++){
-        if(globalInfo::instrument_assignment[i]==type && i != agent_id && !isAssigned() && !agentAssigned(i)){
-            needed_info[i]=true;
+        if(globalInfo::instrumentAssignment[i] == type
+                                    && i != agentId
+                                    && !isAssigned()
+                                    && !agentAssigned(i)){
+            neededInfo[i]=true;
         }
         else{
-            needed_info[i]=false;
+            neededInfo[i]=false;
         }
     }
 }
 
 // Only ask if node is close to itself
-void Agent::determine_needed_info_distance(){
-    int type=instrument_type;
+void Agent::determineNeededInfoDistance(){
+    int type=instrumentType;
     for (int i=0; i < numAgents; i++){
-        if(globalInfo::instrument_assignment[i]==type && i != agent_id && !isAssigned() && !agentAssigned(i)){
-            needed_info[i]=true;
+        if(globalInfo::instrumentAssignment[i] == type
+                                    && i != agentId
+                                    && isClose(i)){
+            neededInfo[i]=true;
         }
         else{
-            needed_info[i]=false;
+            neededInfo[i]=false;
+        }
+    }
+}
+
+// Only ask if node is close to itself and consider if moving
+void Agent::determineNeededInfoDistanceMoving(){
+    int type=instrumentType;
+    for (int i=0; i < numAgents; i++){
+        if(globalInfo::instrumentAssignment[i] == type
+                                    && i != agentId
+                                    && isClose(i)
+                                    && !isAssigned()
+                                    && !agentAssigned(i)){
+            neededInfo[i]=true;
+        }
+        else{
+            neededInfo[i]=false;
         }
     }
 }
 
 bool Agent::isAssigned(){
     // Assume moving if any vector is above half its speed
-    return abs(agent_position.x - assigned_task_position.x) < speed/2
-            && abs(agent_position.y - assigned_task_position.y) < speed/2
-            && abs(agent_position.z - assigned_task_position.z) < speed/2;
+    return abs(agentPosition.x - assignedTaskPosition.x) < speed/2
+            && abs(agentPosition.y - assignedTaskPosition.y) < speed/2
+            && abs(agentPosition.z - assignedTaskPosition.z) < speed/2;
 }
 
-bool Agent::isClose(int which_agent){
-    // If don't know info, assume close
+bool Agent::isClose(int whichAgent){
+    // If we don't know the position, ask for it for sure. TODO: Only ask a few times
+    if((knownPositions[whichAgent].x == 0.0) 
+                        && (knownPositions[whichAgent].y == 0.0) 
+                        && (knownPositions[whichAgent].z == 0.0)){
+        return true;
+    }
+    // Else, calculate probability that we ask for position based off how close the last reading was.
+    // the closer, the more likely we are to ask for it
+    double randomPercent = randomDouble(0.0, 1.0);
+    double distanceBetweenAgents = euclideanDistance(agentPosition, knownPositions[whichAgent]);
+    double percentLikelyToSend = 1 - (distanceBetweenAgents / globalInfo::maxPositionDistance);
+    if(randomPercent < percentLikelyToSend) return true;
+    return false;
 }
 
-bool Agent::agentAssigned(int which_agent){
+bool Agent::agentAssigned(int whichAgent){
     for(int i = 0; i < numTasks; i++){
-        Vector tempTaskLocation = globalInfo::allTasks.at(i).task->task_location;
+        Vector tempTaskLocation = globalInfo::allTasks.at(i).task->taskLocation;
         // If the movement is less than half its speed, assume it did not move
-        if(abs(tempTaskLocation.x - known_positions[which_agent].x) < speed/2
-                && abs(tempTaskLocation.y - known_positions[which_agent].y) < speed/2
-                && abs(tempTaskLocation.z - known_positions[which_agent].z) < speed/2){
+        if(abs(tempTaskLocation.x - knownPositions[whichAgent].x) < speed/2
+                && abs(tempTaskLocation.y - knownPositions[whichAgent].y) < speed/2
+                && abs(tempTaskLocation.z - knownPositions[whichAgent].z) < speed/2){
             return true;
         }
     }
@@ -96,204 +135,170 @@ void Agent::fillLocalCostMatrix(){
     for(int i = 0; i < numTasks; i++){
         vector<double> agentCosts;
         for(int j = 0; j < numTasks; j++){
-            agentCosts.push_back(euc_dist(known_positions[i], globalInfo::allTasks.at(j).task->task_location));
+            agentCosts.push_back(euclideanDistance(knownPositions[i], globalInfo::allTasks.at(j).task->taskLocation));
         }
         tempCostMatrix.push_back(agentCosts);
     }
     localCostMatrix = tempCostMatrix;
 }
 
-void Agent::print_position(){
-    std::cout << "Agent #" << agent_id << ": Position (" << agent_position.x << "," << agent_position.y << "," << agent_position.z << ") ";
+void Agent::printPosition(){
+    std::cout << "Agent #" << agentId << ": Position (" << agentPosition.x << "," << agentPosition.y << "," << agentPosition.z << ") ";
 }
 
-void Agent::print_assigned_position(){
-    std::cout << " Assigned Position: (" << assigned_task_position.x << "," << assigned_task_position.y << "," << assigned_task_position.z << ") " << std::endl;
+void Agent::printAssignedPosition(){
+    std::cout << " Assigned Position: (" << assignedTaskPosition.x << "," << assignedTaskPosition.y << "," << assignedTaskPosition.z << ") " << std::endl;
 }
 
-void Agent::initialize_cinfo(){
-    conflict_info *temp = new conflict_info;
-    c_info =temp;
+void Agent::updateTaskPosition(double x, double y, double z){
+    assignedTaskPosition = Vector(x,y,z);
 }
 
-void Agent::print_cinfo(){
-    int a_size=c_info->agents_in_conflict.size();
-    int t_size=c_info->tasks_in_conflict.size();
-    if ((a_size == 0) && (t_size==0)){
-        std::cout << "No conflict for agent " << agent_id << std::endl;
-        return;
-    }
-    else{
-        std::cout << "Conflicts for agent " << agent_id << std::endl;
-    }
-    std::cout << "Agents in conflict: ";
-    for (int i=0; i < a_size; i++){
-        std::cout << c_info->agents_in_conflict[i] << " ";
-    }
-    std::cout << "\nTasks in conflict: ";
-    for (int j=0; j < t_size; j++){
-        std::cout << c_info->agents_in_conflict[j] << " ";
-    }
-}
-
-void Agent::update_task_position(double x, double y, double z){
-    assigned_task_position = Vector(x,y,z);
-}
-
-void Agent::fill_in_agent_costs(std::vector<TaskNode> &all_ts){
-    task_costs= new double [numTasks];
+void Agent::fillInAgentCosts(std::vector<TaskNode> &allTasks){
+    taskCosts= new double [numTasks];
     for (int i=0; i < numTasks; i++){
-        if (instrument_type==all_ts[i].task->instrument_requirement){
-            task_costs[i]=euc_dist(all_ts[i].task->task_location, agent_position);
+        if (instrumentType==allTasks[i].task->instrumentRequirement){
+            taskCosts[i]=euclideanDistance(allTasks[i].task->taskLocation, agentPosition);
         }
-        else task_costs[i]=INT_MAX;
+        else taskCosts[i]=INT_MAX;
     }
 }
 
-void Agent::print_agent_costs(){
+void Agent::printAgentCosts(){
     std::cout << "costs:" << std::endl;
     for (int i=0; i < numTasks; i++){
-        if (task_costs[i]==INT_MAX){
+        if (taskCosts[i]==INT_MAX){
             std::cout << "x ";
         }
-        else std::cout << task_costs[i] << " ";
+        else std::cout << taskCosts[i] << " ";
     }
     std::cout << std::endl;
 }
 
-void Agent::set_speed(double speedIn){
+void Agent::setSpeed(double speedIn){
     speed = speedIn;
 }
 
-void Agent::set_num_agents(int numAgentsIn){
+void Agent::setNumAgents(int numAgentsIn){
     numAgents = numAgentsIn;
 }
 
-void Agent::set_num_tasks(int numTasksIn){
+void Agent::setNumTasks(int numTasksIn){
     numTasks = numTasksIn;
 }
 
-void Agent::initialize_received_times(){
-    received_times = new unsigned long int [numAgents];
+void Agent::initializeReceivedTimes(){
+    receivedTimes = new unsigned long int [numAgents];
     for (int i=0; i < numAgents; i++){
-        received_times[i]=0;
+        receivedTimes[i]=0;
     }
 }
 
-void Agent::initialize_needed_info(){
-    needed_info = new bool [numAgents];
-    for (int i=0; i < numAgents; i++){
-        received_times[i]=false;
+void Agent::initializeNeededInfo(){
+    neededInfo = new bool [globalInfo::numAgents];
+    for (int i=0; i < globalInfo::numAgents; i++){
+        neededInfo[i]=false;
     }
 }
 
-void Agent::initialize_sent_times(){
-    sent_times = new unsigned long*[globalInfo::numAgents];
+void Agent::initializeSentTimes(){
+    sentTimes = new unsigned long*[globalInfo::numAgents];
     for (int j=0; j < globalInfo::numAgents; j++){
-        sent_times[j] = new unsigned long[globalInfo::numAgents];
+        sentTimes[j] = new unsigned long[globalInfo::numAgents];
     }
     // Initialize with false
     for (int j=0; j < globalInfo::numAgents; j++){
         for (int i=0; i < globalInfo::numAgents; i++){
-            sent_times[j][i] = 0;
+            sentTimes[j][i] = 0;
         }
     }
 }
 
-void Agent::initialize_info_requests(){
-    info_requests = new bool [numAgents];
-    previous_sent_request = new bool [numAgents];
-    memset(info_requests, false, numAgents);
+void Agent::initializeInfoRequests(){
+    infoRequests = new bool [numAgents];
+    previousSentRequest = new bool [numAgents];
+    memset(infoRequests, false, numAgents);
 }
 
-void Agent::initialize_known_positions(){
-    known_positions = new Vector [numAgents];
-    known_positions[agent_id]=agent_position;
+void Agent::initializeKnownPositions(){
+    knownPositions = new Vector [numAgents];
+    knownPositions[agentId]=agentPosition;
 }
 
 // Also initialize message buffer
-void Agent::initialize_known_info(){
-    known_info = new bool [numAgents];
-    memset(known_info, false, numAgents);
-    which_positions_to_send = new bool [numAgents];
-    memset(which_positions_to_send, false, numAgents);
-    known_info[agent_id]=true;
+void Agent::initializeKnownInfo(){
+    knownInfo = new bool [numAgents];
+    memset(knownInfo, false, numAgents);
+    whichPositionsToSend = new bool [numAgents];
+    memset(whichPositionsToSend, false, numAgents);
+    knownInfo[agentId]=true;
 }
 
-void Agent::initialize_partial_assignment(){
+void Agent::initializePartialAssignment(){
     //std::cout << "Initalizing partial assignment" << endl;
-    partial_assignment = new int [numAgents];
+    partialAssignment = new int [numAgents];
     for (int i=0; i < numAgents; i++){
-        partial_assignment[i]=-1;
+        partialAssignment[i]=-1;
     }
 }
 
-void Agent::print_partial_assignment(){
-    std::cout << "Agent #" << agent_id << "\tPartial Assignment: ";
+void Agent::printPartialAssignment(){
+    std::cout << "Agent #" << agentId << "\tPartial Assignment: ";
     for (int i=0; i < numAgents; i++){
-        std::cout << partial_assignment[i] << " ";
-    }
-    std::cout << "\n";
-}
-
-void Agent::print_known_info(){
-    std::cout << "Agent #" << agent_id << "\tKnown Info:\t";
-    for (int i=0; i < numAgents; i++){
-        std::cout << known_info[i] << " ";
+        std::cout << partialAssignment[i] << " ";
     }
     std::cout << "\n";
 }
 
-void Agent::print_needed_info(){
-    std::cout << "Agent #" << agent_id << "\tNeeded Info:\t";
+void Agent::printKnownInfo(){
+    std::cout << "Agent #" << agentId << "\tKnown Info:\t";
     for (int i=0; i < numAgents; i++){
-        std::cout << needed_info[i] << " ";
+        std::cout << knownInfo[i] << " ";
     }
     std::cout << "\n";
 }
 
-void Agent::print_assigned_task_pos(){
-    std::cout << "Agent #" << agent_id << "\tAssigned Task Position:\t";
-    std::cout << "("<< assigned_task_position.x << "," << assigned_task_position.y << "," << assigned_task_position.z << ")";
+void Agent::printNeededInfo(){
+    std::cout << "Agent #" << agentId << "\tNeeded Info:\t";
+    for (int i=0; i < numAgents; i++){
+        std::cout << neededInfo[i] << " ";
+    }
     std::cout << "\n";
 }
 
-void Agent::move_agent(){
-    // double xnew, ynew, znew;
-    // xnew=agent_position.x+movement_vec.x;
-    // ynew=agent_position.y+movement_vec.y;
-    // znew=agent_position.z+movement_vec.z;
-    // //distance_traveled++;
-    // update_position(xnew, ynew, znew);
+void Agent::printAssignedTaskPos(){
+    std::cout << "Agent #" << agentId << "\tAssigned Task Position:\t";
+    std::cout << "("<< assignedTaskPosition.x << "," << assignedTaskPosition.y << "," << assignedTaskPosition.z << ")";
+    std::cout << "\n";
 }
 
-send_request Agent::create_send_request(){
-    send_request to_send;
-    to_send.sender_id=agent_id;
-    bool* request_to_send = new bool[numAgents];
+sendRequest Agent::createSendRequest(){
+    sendRequest toSend;
+    toSend.senderId=agentId;
+    bool* requestToSend = new bool[numAgents];
     // Copy request info over
     for (int i=0; i < numAgents; i++){
-        request_to_send[i]=info_requests[i];
+        requestToSend[i]=infoRequests[i];
     }
-    to_send.request=request_to_send;
-    to_send.num_hops=0;
-    return to_send;
+    toSend.request=requestToSend;
+    toSend.numHops=0;
+    return toSend;
 }
 
-send_position Agent::create_send_position(int which_agent){
-    send_position to_send;
-    to_send.info_id=which_agent;
-    to_send.sender_id=agent_id;
-    to_send.position=known_positions[which_agent];
-    if(which_agent == agent_id){
+sendPosition Agent::createSendPosition(int whichAgent){
+    sendPosition toSend;
+    toSend.infoId=whichAgent;
+    toSend.senderId=agentId;
+    toSend.position=knownPositions[whichAgent];
+    if(whichAgent == agentId){
         std::chrono::milliseconds ms =
             std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() );
-        to_send.time_sent = ms.count();
-        to_send.position=agent_position;
+        toSend.timeSent = ms.count();
+        toSend.position=agentPosition;
     }
     else{
-        to_send.time_sent=received_times[which_agent];
+        toSend.timeSent=receivedTimes[whichAgent];
     }
     
-    return to_send;
+    return toSend;
 }

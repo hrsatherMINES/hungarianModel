@@ -13,27 +13,27 @@ namespace ns3 {
         packet->CopyData(buf, packet->GetSize());
         std::string msg = std::string(reinterpret_cast<const char *>(buf), packet->GetSize());
         // if(node->GetId() == 3) std::cout << node->GetId() << " received " << msg << std::endl;
-        std::cout << node->GetId() << " received " << msg << std::endl;
+        //std::cout << node->GetId() << " received " << msg << std::endl;
         delete[] buf;
         //std::cout << "received" << msg << std::endl;
         // Received request for position
         if(msg[0] == 'R'){
-            send_request newRequest = deserializeRequestInfo(msg);
+            sendRequest newRequest = deserializeRequestInfo(msg);
             // make sure unique
-            if(isNewRequest(globalInfo::allAgents.at(node->GetId()).agent->received_requests, newRequest)){
+            if(isNewRequest(globalInfo::allAgents.at(node->GetId()).agent->receivedRequests, newRequest)){
                 // Increment number of hops
-                newRequest.num_hops++;
-                globalInfo::allAgents.at(node->GetId()).agent->received_requests.push_back(newRequest);
+                newRequest.numHops++;
+                globalInfo::allAgents.at(node->GetId()).agent->receivedRequests.push_back(newRequest);
             }
         }
         // Received position
         else if(msg[0] == 'P'){
-            send_position newPosition = deserializePositionInfo(msg);
-            globalInfo::allAgents.at(node->GetId()).agent->received_positions.push_back(newPosition);
+            sendPosition newPosition = deserializePositionInfo(msg);
+            globalInfo::allAgents.at(node->GetId()).agent->receivedPositions.push_back(newPosition);
             
             //std::cout << "received" << msg << std::endl;
-            //if((node->GetId() == 1 && newPosition.sender_id == 3) || (node->GetId() == 3 && newPosition.sender_id == 1))
-            //if(node->GetId() == 1 && newPosition.sender_id == 8) std::cout << node->GetId() << " received position " << msg << std::endl;
+            //if((node->GetId() == 1 && newPosition.senderId == 3) || (node->GetId() == 3 && newPosition.senderId == 1))
+            //if(node->GetId() == 1 && newPosition.senderId == 8) std::cout << node->GetId() << " received position " << msg << std::endl;
         }
     }
 
@@ -51,16 +51,16 @@ namespace ns3 {
             return;
         }
         
-        std::cout << "sending " << data << " from " << sourceNode->GetId() << " to " << desitinationNode->GetId() << std::endl;
+        //std::cout << "sending " << data << " from " << sourceNode->GetId() << " to " << desitinationNode->GetId() << std::endl;
         //if(sourceNode->GetId() == 1 && desitinationNode->GetId() == 3) std::cout << "sending " << data << " from " << sourceNode->GetId() << " to " << desitinationNode->GetId() << std::endl;
     }
 
-    char* serializePositionInfo(send_position position){
+    char* serializePositionInfo(sendPosition position){
         std::string serialized = "";
         serialized += "P@";
-        serialized += to_string(position.sender_id);
+        serialized += to_string(position.senderId);
         serialized += "@";
-        serialized += to_string(position.info_id);
+        serialized += to_string(position.infoId);
         serialized += "@";
         serialized += to_string(position.position.x);
         serialized += "@";
@@ -68,7 +68,7 @@ namespace ns3 {
         serialized += "@";
         serialized += to_string(position.position.z);
         serialized += "@";
-        serialized += to_string(position.time_sent);
+        serialized += to_string(position.timeSent);
         serialized += "@";
         serialized += "\0";
         // Convert to char*
@@ -77,8 +77,8 @@ namespace ns3 {
         return cstr;
     }
 
-    send_position deserializePositionInfo(std::string serialized){
-        send_position newPosition;
+    sendPosition deserializePositionInfo(std::string serialized){
+        sendPosition newPosition;
         // Split on @ delimeter
         std::string temp;
         size_t pos = 0;
@@ -89,19 +89,19 @@ namespace ns3 {
             serialized.erase(0, pos + 1);
         }
         // Fill in info
-        newPosition.sender_id = stoi(items.at(1));
-        newPosition.info_id = stoi(items.at(2));
+        newPosition.senderId = stoi(items.at(1));
+        newPosition.infoId = stoi(items.at(2));
         newPosition.position.x = stod(items.at(3));
         newPosition.position.y = stod(items.at(4));
         newPosition.position.z = stod(items.at(5));
-        newPosition.time_sent = stoll(items.at(6));
+        newPosition.timeSent = stoll(items.at(6));
         return newPosition;
     }
 
-    char* serializeRequestInfo(send_request request){
+    char* serializeRequestInfo(sendRequest request){
         std::string serialized = "";
         serialized += "R@";
-        serialized += to_string(request.sender_id);
+        serialized += to_string(request.senderId);
         serialized += "@";
         for(unsigned long int i = 0; i < globalInfo::allAgents.size(); i++){
             if(request.request[i] == 1){
@@ -112,7 +112,7 @@ namespace ns3 {
             }
         }
         serialized += "@";
-        serialized += to_string(request.num_hops);
+        serialized += to_string(request.numHops);
         serialized += "@";
         serialized += "\0";
         // Convert to char*
@@ -121,8 +121,8 @@ namespace ns3 {
         return cstr;
     }
 
-    send_request deserializeRequestInfo(std::string serialized){
-        send_request newRequest;
+    sendRequest deserializeRequestInfo(std::string serialized){
+        sendRequest newRequest;
         std::string temp;
         size_t pos = 0;
         vector<std::string> items;
@@ -132,55 +132,55 @@ namespace ns3 {
             serialized.erase(0, pos + 1);
         }
         // Extract id
-        newRequest.sender_id = stoi(items.at(1));
+        newRequest.senderId = stoi(items.at(1));
         // Extract requests
-        bool* request_to_send = new bool[globalInfo::allAgents.size()];
+        bool* requestToSend = new bool[globalInfo::allAgents.size()];
         for(unsigned long int i = 0; i < globalInfo::allAgents.size(); i++){
-            request_to_send[i] = (int)(items.at(2)[i]) - '0';
+            requestToSend[i] = (int)(items.at(2)[i]) - '0';
         }
-        newRequest.request = request_to_send;
+        newRequest.request = requestToSend;
         // Extract num hops
-        newRequest.num_hops = stoi(items.at(3));
+        newRequest.numHops = stoi(items.at(3));
         return newRequest;
     }
 
-    bool requests_are_null(char* serializedMessage){
+    bool requestsAreNull(char* serializedMessage){
         for(int i = 0; serializedMessage[i] != '\0'; i++){
             if(serializedMessage[i] == '1') return false;
         }
         return true;
     }
 
-    void send_request_info(AgentNode &sender, AgentNode &receiver, Ipv4InterfaceContainer interface){
+    void sendRequestInfo(AgentNode &sender, AgentNode &receiver, Ipv4InterfaceContainer interface){
         // Send all requests in vector
-        for(unsigned long int i = 0; i < sender.agent->received_requests.size(); i++){
+        for(unsigned long int i = 0; i < sender.agent->receivedRequests.size(); i++){
             // Don't send if request is for itself to itself
-            if((sender.agent->received_requests.at(i).sender_id == sender.agent->agent_id)
-                    && (i != sender.agent->received_requests.size() - 1)){
+            if((sender.agent->receivedRequests.at(i).senderId == sender.agent->agentId)
+                    && (i != sender.agent->receivedRequests.size() - 1)){
                 continue;
             }
             // Don't send if request is to who sent it
-            if(sender.agent->received_requests.at(i).sender_id == receiver.agent->agent_id){
+            if(sender.agent->receivedRequests.at(i).senderId == receiver.agent->agentId){
                 continue;
             }
             // Serialize message
-            char* serializedMessage = serializeRequestInfo(sender.agent->received_requests.at(i));
+            char* serializedMessage = serializeRequestInfo(sender.agent->receivedRequests.at(i));
             int messageSize = 0;
             for(int j = 0; serializedMessage[j] != '\0'; j++){
                 messageSize++;
             }
             // Check if no requests
-            if(requests_are_null(serializedMessage)) return;
+            if(requestsAreNull(serializedMessage)) return;
 
             // Send request
             // If request is one hop, send for sure, else, stochastically send
-            if(sender.agent->received_requests.at(i).num_hops != 1){
+            if(sender.agent->receivedRequests.at(i).numHops != 1){
                 int randNum = rand()%100;
                 if(randNum < globalInfo::probabilityDropped){
                     return;
                 }
             }
-            sender.agent->num_request_messages_sent++;
+            sender.agent->numRequestMessagesSent++;
             SendMessage(serializedMessage, messageSize + 1, sender.node, receiver.node,  interface);
             delete[] serializedMessage;
         }
@@ -195,94 +195,94 @@ namespace ns3 {
         }
     }
 
-    bool alreadySentInfo(AgentNode &sender, int destinationId, send_position message){
+    bool alreadySentInfo(AgentNode &sender, int destinationId, sendPosition message){
         for(int i = 0; i < sender.agent->numAgents; i++){
-            if(sender.agent->sent_times[destinationId][message.info_id] == message.time_sent){
+            if(sender.agent->sentTimes[destinationId][message.infoId] == message.timeSent){
                 return true;
             }
         }
         return false;
     }
 
-    void send_position_info(AgentNode &sender, AgentNode &receiver, int which_agent, Ipv4InterfaceContainer interface){
-        send_position to_send = sender.agent->create_send_position(which_agent);
-        char* serializedMessage = serializePositionInfo(to_send);
+    void sendPositionInfo(AgentNode &sender, AgentNode &receiver, int whichAgent, Ipv4InterfaceContainer interface){
+        sendPosition toSend = sender.agent->createSendPosition(whichAgent);
+        char* serializedMessage = serializePositionInfo(toSend);
         int messageSize = 0;
         for(int i = 0; serializedMessage[i] != '\0'; i++){
             messageSize++;
         }
         // Don't send if info is for node that we would send to
-        if(to_send.info_id == receiver.agent->agent_id) return;
+        if(toSend.infoId == receiver.agent->agentId) return;
         // Dont send if already sent same info to same destination previously
-        if(alreadySentInfo(sender, receiver.agent->agent_id, to_send)){
+        if(alreadySentInfo(sender, receiver.agent->agentId, toSend)){
             return;
         }
         // Drop stochastically if num hops away
-        if(sender.agent->agent_id != which_agent){
+        if(sender.agent->agentId != whichAgent){
             int randNum = rand()%100;
             if(randNum < globalInfo::probabilityDropped){
                 return;
             }
         }
         // Send
-        sender.agent->num_position_messages_sent++;
+        sender.agent->numPositionMessagesSent++;
         SendMessage(serializedMessage, messageSize + 1, sender.node, receiver.node, interface);
         delete[] serializedMessage;
         // Update last info sent
-        sender.agent->sent_times[receiver.agent->agent_id][to_send.info_id] = to_send.time_sent;
-        //printDebug(sender.agent->sent_times);
+        sender.agent->sentTimes[receiver.agent->agentId][toSend.infoId] = toSend.timeSent;
+        //printDebug(sender.agent->sentTimes);
     }
 
     ///////////////////////////////////////////////////////////////////////////
     // Merge related functions
 
-    void merge_received_requests(Agent *ag){
-        for(unsigned long int i = 0; i < ag->received_requests.size(); i++){
-            int who_sent = ag->received_requests.at(i).sender_id;
+    void mergeReceivedRequests(Agent *ag){
+        for(unsigned long int i = 0; i < ag->receivedRequests.size(); i++){
+            int whoSent = ag->receivedRequests.at(i).senderId;
             for(unsigned long int j=0; j < globalInfo::allAgents.size(); j++){
                 // Need to setup who requested matrix
-                if (ag->received_requests.at(i).request[j]){
-                    ag->info_requests[j]=true;
-                    ag->who_requested[who_sent][j]=true;
+                if (ag->receivedRequests.at(i).request[j]){
+                    ag->infoRequests[j]=true;
+                    ag->whoRequested[whoSent][j]=true;
                 }
                 else{
                     // Fill in who request matrix with false
-                    ag->who_requested[who_sent][j]=false;
+                    ag->whoRequested[whoSent][j]=false;
                 }
             }
         }
         // Remove all processed requests
-        ag->received_requests.clear();
+        ag->receivedRequests.clear();
     }
 
-    void merge_all_received_requests(std::vector<AgentNode> &all_a){
+    void mergeAllReceivedRequests(std::vector<AgentNode> &allAgents){
         for (unsigned long int i=0; i < globalInfo::allAgents.size(); i++){
-            merge_received_requests(all_a[i].agent);
+            mergeReceivedRequests(allAgents[i].agent);
         }
     }
 
-    void merge_received_positions(Agent *ag){
-        for(unsigned long int i = 0; i < ag->received_positions.size(); i++){
-            int who_sent = ag->received_positions.at(i).sender_id;
-            int p_id = ag->received_positions.at(i).info_id;
-            if (ag->received_times[p_id] < ag->received_positions.at(i).time_sent){
-                // if(ag->agent_id == 1)  (std::cout << "updated " << ag->received_positions.at(i).info_id << " to "
-                //             << ag->received_positions.at(i).position <<std::endl);
-                ag->known_info[p_id]=true;
-                ag->known_positions[p_id] = ag->received_positions.at(i).position;
-                ag->info_requests[p_id] = false;
-                ag->received_times[p_id] = ag->received_positions.at(i).time_sent;
+    void mergeReceivedPositions(Agent *ag){
+        for(unsigned long int i = 0; i < ag->receivedPositions.size(); i++){
+            int whoSent = ag->receivedPositions.at(i).senderId;
+            int taskId = ag->receivedPositions.at(i).infoId;
+            if (ag->receivedTimes[taskId] < ag->receivedPositions.at(i).timeSent){
+                // if(ag->agentId == 1)  (std::cout << "updated " << ag->receivedPositions.at(i).infoId << " to "
+                //             << ag->receivedPositions.at(i).position <<std::endl);
+                ag->knownInfo[taskId]=true;
+                ag->knownPositions[taskId] = ag->receivedPositions.at(i).position;
+                ag->infoRequests[taskId] = false;
+                ag->receivedTimes[taskId] = ag->receivedPositions.at(i).timeSent;
             }
             // Neighbor who sent informnation should no longer be requesting it
-            ag->who_requested[who_sent][p_id]=false;
+            ag->whoRequested[whoSent][taskId]=false;
         }
         // Remove all processed requests
-        ag->received_positions.clear();
+        ag->receivedPositions.clear();
         // Update own info
         std::chrono::milliseconds ms =
                 std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() );
-        ag->received_times[ag->agent_id] = ms.count();
-        ag->known_positions[ag->agent_id] = ag->agent_position;
+        ag->receivedTimes[ag->agentId] = ms.count();
+        ag->knownPositions[ag->agentId] = ag->agentPosition;
     }
 
 
@@ -290,8 +290,8 @@ namespace ns3 {
     ///////////////////////////////////////////////////////////////////////////
     // Not needed but useful for debugging
 
-    bool requestsEqual(send_request request1, send_request request2){
-        bool idEqual = request1.sender_id == request2.sender_id;
+    bool requestsEqual(sendRequest request1, sendRequest request2){
+        bool idEqual = request1.senderId == request2.senderId;
         for(unsigned long int i = 0; i < globalInfo::allAgents.size(); i++){
             if(request1.request[i] != request2.request[i]){
                 return false;
@@ -300,7 +300,7 @@ namespace ns3 {
         return idEqual;
     }
 
-    bool isNewRequest(vector<send_request> allRequests, send_request request){
+    bool isNewRequest(vector<sendRequest> allRequests, sendRequest request){
         for(unsigned long int i = 0; i < allRequests.size(); i++){
             if(requestsEqual(allRequests.at(i), request)){
                 return false;
@@ -309,9 +309,9 @@ namespace ns3 {
         return true;
     }
 
-    // bool positionsEqual(send_position position1, send_position position2){
-    //     bool idsEqual = (position1.info_id == position2.info_id)
-    //                 && (position1.sender_id == position2.sender_id);
+    // bool positionsEqual(sendPosition position1, sendPosition position2){
+    //     bool idsEqual = (position1.infoId == position2.infoId)
+    //                 && (position1.senderId == position2.senderId);
     //     for(unsigned long int i = 0; i < globalInfo::allAgents.size(); i++){
     //         if(position1.request[i] != position2.request[i]){
     //             return false;
@@ -320,7 +320,7 @@ namespace ns3 {
     //     return idEqual;
     // }
 
-    bool isNewPosition(vector<send_request> allRequests, send_request request){
+    bool isNewPosition(vector<sendRequest> allRequests, sendRequest request){
         for(unsigned long int i = 0; i < allRequests.size(); i++){
             if(requestsEqual(allRequests.at(i), request)){
                 return false;

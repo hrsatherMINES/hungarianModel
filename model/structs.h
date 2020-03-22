@@ -6,20 +6,20 @@
 
 namespace ns3 {
 
-    struct send_position;
+    struct sendPosition;
     class TaskNode;
     class AgentNode;
-    struct send_scores;
-    struct send_request;
-    struct conflict_info;
+    struct sendScores;
+    struct sendRequest;
+    struct conflictInfo;
     class Agent;
     class Task;
 
-    struct send_position{
-        int sender_id;
-        int info_id;
+    struct sendPosition{
+        int senderId;
+        int infoId;
         Vector position;
-        unsigned long int time_sent;
+        unsigned long int timeSent;
     };
 
     class TaskNode{
@@ -34,44 +34,23 @@ namespace ns3 {
         Agent* agent;
     };
 
-    struct send_scores{
-        int sender_id;
-        int info_id;
-        double* scores;
-        send_scores* next_message;
-    };
-
-    struct send_request{
-        int sender_id;
-        int num_hops;
+    struct sendRequest{
+        int senderId;
+        int numHops;
         bool* request;
-    };
-
-    struct conflict_info{
-        std::vector<int> agents_in_conflict;
-        std::vector<int> tasks_in_conflict;
-    };
-
-    // Location information
-    struct loc_range{
-        int num_agents_in_range;
-        int min_x;
-        int min_y;
-        int max_x;
-        int max_y;
     };
 
     // Set up Task class
     class Task{
         public:
 
-        int task_id;
-        int instrument_requirement;
-        Vector task_location;
+        int taskId;
+        int instrumentRequirement;
+        Vector taskLocation;
 
         // Methods
-        void update_location(double x, double y, double z){
-            task_location=Vector (x, y, z);
+        void updateLocation(double x, double y, double z){
+            taskLocation = Vector (x, y, z);
         }
     };
 }

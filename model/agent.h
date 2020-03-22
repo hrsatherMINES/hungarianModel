@@ -13,39 +13,35 @@ namespace ns3 {
         public:
 
         // Agent state
-        int agent_id;
-        Vector agent_position;
-        Vector assigned_task_position;
-        Vector movement_vec;
-        int instrument_type;
-        int component_membership;
-        double distance_traveled;
-        double distance_left;
-        double* task_costs;
-        bool* component_arr;
+        int agentId;
+        Vector agentPosition;
+        Vector assignedTaskPosition;
+        Vector movementVector;
+        int instrumentType;
+        double distanceTraveled;
+        double distanceLeft;
+        double* taskCosts;
         double speed;
 
         // Message totals
-        int num_request_messages_sent;
-        int num_position_messages_sent;
+        int numRequestMessagesSent;
+        int numPositionMessagesSent;
 
         // Received messages
-        std::vector<send_request> received_requests;
-        std::vector<send_scores> received_scores;
-        std::vector<send_position> received_positions;
-        unsigned long int* received_times;
-        unsigned long int** sent_times;
+        std::vector<sendRequest> receivedRequests;
+        std::vector<sendPosition> receivedPositions;
+        unsigned long int* receivedTimes;
+        unsigned long int** sentTimes;
 
-        bool* needed_info;  // To keep track of what needed personally
-        bool* info_requests;  // To store request to
-        bool* previous_sent_request;
-        bool* known_info;
-        bool* which_positions_to_send;  // Will act as a message buffer
-        Vector* known_positions;
-        bool** who_requested;
-        int* partial_assignment;
-        bool have_all_needed_info;
-        conflict_info *c_info;
+        bool* neededInfo;  // To keep track of what needed personally
+        bool* infoRequests;  // To store request to
+        bool* previousSentRequest;
+        bool* knownInfo;
+        bool* whichPositionsToSend;  // Will act as a message buffer
+        Vector* knownPositions;
+        bool** whoRequested;
+        int* partialAssignment;
+        bool haveAllNeededInfo;
 
         // Global info
         int numAgents;
@@ -54,42 +50,40 @@ namespace ns3 {
         std::vector<std::vector<double>> localCostMatrix;
 
         // Methods
-        void print_position();
-        void update_task_position(double x, double y, double z);
-        void fill_in_agent_costs(std::vector<TaskNode> &all_ts);
-        void print_agent_costs();
-        void print_needed_info();
-        void initialize_info_requests();
-        void initialize_previous_known_positions();
-        void initialize_known_positions();
-        void initialize_known_info();
-        void print_known_info();
-        void print_assigned_position();
-        void initialize_partial_assignment();
-        void initialize_cinfo();
-        void initialize_received_times();
-        void initialize_needed_info();
-        void initialize_sent_times();
-        void print_partial_assignment();
-        void print_assigned_task_pos();
-        void move_agent();
-        send_request create_send_request();
-        send_position create_send_position(int which_agent);
-        void print_cinfo();
+        void printPosition();
+        void updateTaskPosition(double x, double y, double z);
+        void fillInAgentCosts(std::vector<TaskNode> &allTasks);
+        void printAgentCosts();
+        void printNeededInfo();
+        void initializeInfoRequests();
+        void initializePreviousKnownPositions();
+        void initializeKnownPositions();
+        void initializeKnownInfo();
+        void printKnownInfo();
+        void printAssignedPosition();
+        void initializePartialAssignment();
+        void initializeReceivedTimes();
+        void initializeNeededInfo();
+        void initializeSentTimes();
+        void printPartialAssignment();
+        void printAssignedTaskPos();
+        sendRequest createSendRequest();
+        sendPosition createSendPosition(int whichAgent);
         void fillLocalCostMatrix();
-        void set_speed(double speedIn);
-        void set_num_agents(int numAgentsIn);
-        void set_num_tasks(int numTasksIn);
-        bool agentAssigned(int which_agent);
+        void setSpeed(double speedIn);
+        void setNumAgents(int numAgentsIn);
+        void setNumTasks(int numTasksIn);
+        bool agentAssigned(int whichAgent);
         bool isAssigned();
-        bool isClose(int which_agent);
+        bool isClose(int whichAgent);
 
         // Different heuristics
-        void determine_needed_info_original();
-        void determine_needed_info_still_moving();
-        void determine_needed_info_self_not_assigned();
-        void determine_needed_info_both_moving();
-        void determine_needed_info_distance();
+        void determineNeededInfoOriginal();
+        void determineNeededInfoStillMoving();
+        void determineNeededInfoSelfNotAssigned();
+        void determineNeededInfoBothMoving();
+        void determineNeededInfoDistance();
+        void determineNeededInfoDistanceMoving();
     };
 }
 
