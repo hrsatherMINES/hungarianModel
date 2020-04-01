@@ -16,6 +16,7 @@ namespace ns3 {
         int agentId;
         Vector agentPosition;
         Vector assignedTaskPosition;
+        Vector previousAssignedTaskPosition;
         Vector movementVector;
         int instrumentType;
         double distanceTraveled;
@@ -31,14 +32,18 @@ namespace ns3 {
         std::vector<sendRequest> receivedRequests;
         std::vector<sendPosition> receivedPositions;
         unsigned long int* receivedTimes;
-        unsigned long int** sentTimes;
+        unsigned long int* lastTimeHeardFrom;
+        double** sentPositions;
+        long int** sentRequests;
 
         bool* neededInfo;  // To keep track of what needed personally
+        bool* positionsToAsk;
         bool* infoRequests;  // To store request to
         bool* previousSentRequest;
         bool* knownInfo;
         bool* whichPositionsToSend;  // Will act as a message buffer
         Vector* knownPositions;
+        Vector* previousKnownPositions;
         bool** whoRequested;
         int* partialAssignment;
         bool haveAllNeededInfo;
@@ -51,11 +56,11 @@ namespace ns3 {
 
         // Methods
         void printPosition();
-        void updateTaskPosition(double x, double y, double z);
         void fillInAgentCosts(std::vector<TaskNode> &allTasks);
         void printAgentCosts();
         void printNeededInfo();
         void initializeInfoRequests();
+        void initializeLastTimeHeardFrom();
         void initializePreviousKnownPositions();
         void initializeKnownPositions();
         void initializeKnownInfo();
@@ -64,7 +69,9 @@ namespace ns3 {
         void initializePartialAssignment();
         void initializeReceivedTimes();
         void initializeNeededInfo();
-        void initializeSentTimes();
+        void initializePositionsToAsk();
+        void initializeSentPositions();
+        void initializeSentRequests();
         void printPartialAssignment();
         void printAssignedTaskPos();
         sendRequest createSendRequest();
@@ -76,6 +83,11 @@ namespace ns3 {
         bool agentAssigned(int whichAgent);
         bool isAssigned();
         bool isClose(int whichAgent);
+        bool movingTowardSameTask(int whichAgent);
+        void initializeAssignedTaskPosition();
+        void initializePreviousAssignedTaskPosition();
+        bool assignmentChanged();
+        bool agentIsOneHop(int whichAgent);
 
         // Different heuristics
         void determineNeededInfoOriginal();
@@ -84,6 +96,9 @@ namespace ns3 {
         void determineNeededInfoBothMoving();
         void determineNeededInfoDistance();
         void determineNeededInfoDistanceMoving();
+        void determineNeededInfoInferTask();
+        void determineNeededInfoInferTaskAndMoving();
+        void determineNeededInfoOneHop();
     };
 }
 

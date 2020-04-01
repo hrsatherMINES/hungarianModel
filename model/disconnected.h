@@ -28,7 +28,7 @@
 #include "ns3/hungarian.h"
 #include "ns3/globalInfo.h"
 #include "ns3/messageHandling.h"
-
+#include "newMethod.h"
 
 namespace ns3 {
     double euclideanDistance(Vector taskPosition, Vector agentPosition);
@@ -36,23 +36,17 @@ namespace ns3 {
     int getInstrumentType(int id);
     std::vector<Task> createTasks();
     std::vector<Agent*> createAgents();
-    void calculateAllCosts(std::vector<TaskNode> allTasks, std::vector<AgentNode> allAgents);
     std::vector<std::vector<double>> createCostMatrix(std::vector<AgentNode> &allAgents);
     void determineAllNeededInfo(std::vector<AgentNode> &allAgents);
-    void initializeAllRequests(std::vector<AgentNode> &allAgents);
     void sendPositionInfo(AgentNode &sender, AgentNode &receiver, int whichAgent, Ipv4InterfaceContainer interface);
     bool compareBoolArr(bool* prev, bool* req);
-    void determinePositionMessagesToSend(AgentNode *ag);
+    void determinePositionMessagesToSend(AgentNode &ag);
     void sendPositionMessagesInBuffer(int currentAgent, std::vector<AgentNode> &allAgents, Ipv4InterfaceContainer interface);
-    double computePartialAssignmentHungarian(Agent &ag, std::vector<TaskNode> &allTasks);
-    void computeAllParitalAssignmentsHungarian(std::vector<AgentNode> &allAgents, std::vector<TaskNode> &allTasks);
+    double computePartialAssignmentHungarian(Agent *ag, std::vector<TaskNode> &allTasks);
     double vectorMagnitude(double x, double y, double z);
     Vector differenceVector(Vector &agentPosition, Vector &taskPosition);
     Vector createMovementVector(Vector &agentPosition, Vector &taskPosition);
-    void determineAssignedLocation(std::vector<AgentNode> &allAgents, std::vector<TaskNode> &allTasks);
     bool allAgentsAssigned(std::vector<AgentNode> &allAgents);
-    void allSendPositionInfo(std::vector<AgentNode> &allAgents, Ipv4InterfaceContainer interface);
-    void moveAllAgentsTowardsGoalStep(std::vector<AgentNode> &allAgents);
     double randomDouble(double fMin, double fMax);
     Vector getPosition (Ptr<Node> node);
     void setPosition (Ptr<Node> node, Vector position);
@@ -60,24 +54,15 @@ namespace ns3 {
     void moveAllPositions(NodeContainer robots);
     void updatePosition(AgentNode* ag);
     void moveAgentTowardsGoalStep(AgentNode ag);
-    void fillAllLocalCosts(std::vector<AgentNode> &allAgents);
-    int totalNumPositionMessagesSent(std::vector<AgentNode> allAgents);
-    int totalNumRequestMessagesSent(std::vector<AgentNode> allAgents);
-    double totalDistanceTraveled(std::vector<AgentNode> allAgents);
-    void checkIfDone(std::vector<AgentNode> allAgents);
-    void addOwnRequestToRequestList(std::vector<AgentNode> allAgents);
-    void allSendRequests(std::vector<AgentNode> allAgents, Ipv4InterfaceContainer interface);
+    int totalNumPositionMessagesSent(std::vector<AgentNode> &allAgents);
+    int totalNumRequestMessagesSent(std::vector<AgentNode> &allAgents);
+    double totalDistanceTraveled(std::vector<AgentNode> &allAgents);
     bool conflictsExist(std::vector<AgentNode> &allAgents);
     bool** createWhoRequested();
     bool compareBoolArr(bool* prev, bool* req);
-
-    // New heuristics
-    void determineAllNeededInfoOriginal(std::vector<AgentNode> &allAgents);
-    void determineAllNeededInfoStillMoving(std::vector<AgentNode> &allAgents);
-    void determineAllNeededInfoSelfMoving(std::vector<AgentNode> &allAgents);
-    void determineAllNeededInfoBothMoving(std::vector<AgentNode> &allAgents);
-    void determineAllNeededInfoDistance(std::vector<AgentNode> &allAgents);
-    void determineAllNeededInfoDistanceMoving(std::vector<AgentNode> &allAgents);
+    void checkIfDone(std::vector<AgentNode> &allAgents);
+    void allBroadcastPositionIfChanged(std::vector<AgentNode> &allAgents, Ipv4InterfaceContainer interface);
+    void allDetermineAndSendPositionMessages(AgentNode &ag, std::vector<AgentNode> &allAgents, Ipv4InterfaceContainer interface);
 }
 
-#endif /* DISCONNECTED_EXP_H */
+#endif /* DISCONNECTED_H */

@@ -20,11 +20,14 @@ namespace ns3 {
     void mergeReceivedRequests(Agent *ag);
     void mergeAllReceivedRequests(std::vector<AgentNode> &allAgents);
     void mergeReceivedPositions(Agent *ag);
+    
     bool requestsEqual(sendRequest request1, sendRequest request2);
     bool isNewRequest(vector<sendRequest> allRequests, sendRequest request);
     bool positionsEqual(sendPosition position1, sendPosition position2);
     bool isNewPosition(vector<sendRequest> allRequests, sendRequest request);
     bool requestsAreNull(char* serializedMessage);
+    bool alreadySentInfo(AgentNode &sender, int destinationId, sendPosition message);
+    double hashedPosition(sendPosition thisPosition);
 }
 
 #endif /* AGENT_H */

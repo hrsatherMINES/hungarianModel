@@ -15,6 +15,7 @@ def build(bld):
         'model/globalInfo.cc',
         'model/debuggingFunctions.cc',
         'model/messageHandling.cc',
+        'model/newMethod.cc',
         'helper/hungarian-helper.cc',
         ]
 
@@ -33,6 +34,7 @@ def build(bld):
         'model/globalInfo.h',
         'model/debuggingFunctions.h',
         'model/messageHandling.h',
+        'model/newMethod.h',
         'helper/hungarian-helper.h',
         ]
 

@@ -26,6 +26,6 @@ private:
 	void step5(int *assignment, double *distMatrix, bool *starMatrix, bool *newStarMatrix, bool *primeMatrix, bool *coveredColumns, bool *coveredRows, int nOfRows, int nOfColumns, int minDim);
 };
 
-#endif
+#endif /* HUNGARIAN_H */
 
 
