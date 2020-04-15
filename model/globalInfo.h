@@ -4,7 +4,8 @@
 #include "structs.h"
 
 namespace ns3 {
-  class globalInfo{
+
+  class globalInfo {
     public:
     static std::vector<AgentNode> allAgents;
     static std::vector<TaskNode> allTasks;
@@ -14,13 +15,23 @@ namespace ns3 {
     static int numTasks;
     static int probabilityDropped;
     static int numMoves;
-    static int counter;
     static int totalMessagesReceived;
+    static int testNumber;
+    static int minPosition;
+    static int maxPosition;
     static double maxPositionDistance;
 
+    // Variables to compute average
+    static int totalNumRequestMessages;
+    static int totalNumPositionMessages;
+    static double totalPercentageReceived;
+    static int totalNumberConflicts;
+    static double totalPercentOptimal;
+
     private:
-    globalInfo(){}
+    globalInfo() {}
   };
+  
 }
 
 #endif /* GLOBALINFO_H */

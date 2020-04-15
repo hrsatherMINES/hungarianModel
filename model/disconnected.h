@@ -34,7 +34,6 @@ namespace ns3 {
     double euclideanDistance(Vector taskPosition, Vector agentPosition);
     Vector addNS3Vectors(Vector v1, Vector v2);
     int getInstrumentType(int id);
-    std::vector<Task> createTasks();
     std::vector<Agent*> createAgents();
     std::vector<std::vector<double>> createCostMatrix(std::vector<AgentNode> &allAgents);
     void determineAllNeededInfo(std::vector<AgentNode> &allAgents);
@@ -53,16 +52,24 @@ namespace ns3 {
     void movePositions(Ptr<Node> node);
     void moveAllPositions(NodeContainer robots);
     void updatePosition(AgentNode* ag);
+    void updateAllPositions(std::vector<AgentNode> &allAgents);
+    void updateAllTasks(std::vector<TaskNode> &allTasks);
     void moveAgentTowardsGoalStep(AgentNode ag);
     int totalNumPositionMessagesSent(std::vector<AgentNode> &allAgents);
     int totalNumRequestMessagesSent(std::vector<AgentNode> &allAgents);
     double totalDistanceTraveled(std::vector<AgentNode> &allAgents);
-    bool conflictsExist(std::vector<AgentNode> &allAgents);
+    int numConflicts(std::vector<AgentNode> &allAgents);
     bool** createWhoRequested();
+    void resetWhoRequested(bool** arr);
     bool compareBoolArr(bool* prev, bool* req);
-    void checkIfDone(std::vector<AgentNode> &allAgents);
+    bool checkIfDone(std::vector<AgentNode> &allAgents);
     void allBroadcastPositionIfChanged(std::vector<AgentNode> &allAgents, Ipv4InterfaceContainer interface);
     void allDetermineAndSendPositionMessages(AgentNode &ag, std::vector<AgentNode> &allAgents, Ipv4InterfaceContainer interface);
+    double findOptimalDistance(std::vector<AgentNode> &allAgents);
+    void giveAllAgentsRandomPositions(std::vector<AgentNode> &allAgents);
+    void giveAllTasksRandomPositions(std::vector<TaskNode> &allAgents);
+    void resetAgents(std::vector<AgentNode> &allAgents);
+    void runTests(std::vector<TaskNode> allTasks, std::vector<AgentNode> allAgents, Ipv4InterfaceContainer interface);
 }
 
 #endif /* DISCONNECTED_H */

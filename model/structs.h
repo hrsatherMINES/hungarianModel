@@ -15,33 +15,33 @@ namespace ns3 {
     class Agent;
     class Task;
 
-    struct sendPosition{
+    struct sendPosition {
         int senderId;
         int infoId;
         Vector position;
         unsigned long int timeSent;
     };
 
-    class TaskNode{
+    class TaskNode {
     public:
         Ptr<Node> node;
         Task* task;
     };
 
-    class AgentNode{
+    class AgentNode {
     public:
         Ptr<Node> node;
         Agent* agent;
     };
 
-    struct sendRequest{
+    struct sendRequest {
         int senderId;
         int numHops;
         bool* request;
     };
 
     // Set up Task class
-    class Task{
+    class Task {
         public:
 
         int taskId;
@@ -49,10 +49,11 @@ namespace ns3 {
         Vector taskLocation;
 
         // Methods
-        void updateLocation(double x, double y, double z){
+        void updateLocation(double x, double y, double z) {
             taskLocation = Vector (x, y, z);
         }
     };
-}
+
+}  // End namespace ns3
 
 #endif /* STRUCTS_H */

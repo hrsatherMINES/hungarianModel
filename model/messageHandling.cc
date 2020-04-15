@@ -1,11 +1,12 @@
 #include "messageHandling.h"
 
 namespace ns3 {
-void ReceivePacket(Ptr<Socket> socket){
+
+void ReceivePacket(Ptr<Socket> socket) {
     globalInfo::totalMessagesReceived++;
     Ptr<Node> node = socket->GetNode();
     Ptr<Packet> packet = socket->Recv();
-    if(socket == NULL || node == NULL || packet == NULL){
+    if (socket == NULL || node == NULL || packet == NULL) {
         std::cout << "Received NULL" << std::endl;
         return;
     }
@@ -14,25 +15,25 @@ void ReceivePacket(Ptr<Socket> socket){
     std::string msg = std::string(reinterpret_cast<const char *>(buf), packet->GetSize());
     delete[] buf;
     // Received request for position
-    if(msg[0] == 'R'){
+    if (msg[0] == 'R') {
         sendRequest newRequest = deserializeRequestInfo(msg);
         // Record who sent the info if it is one hop
-        if(newRequest.numHops == 0){
+        if (newRequest.numHops == 0) {
             std::chrono::milliseconds ms =
                     std::chrono::duration_cast<std::chrono::milliseconds>( std::chrono::system_clock::now().time_since_epoch() );
             globalInfo::allAgents.at(node->GetId()).agent->lastTimeHeardFrom[newRequest.senderId] = ms.count();
         }
         // Make sure unique before saving
-        if(isNewRequest(globalInfo::allAgents.at(node->GetId()).agent->receivedRequests, newRequest)){
+        if (isNewRequest(globalInfo::allAgents.at(node->GetId()).agent->receivedRequests, newRequest)) {
             // Increment number of hops
             newRequest.numHops++;
             globalInfo::allAgents.at(node->GetId()).agent->receivedRequests.push_back(newRequest);
             // Debug
-            if(node->GetId() == 6) std::cout << node->GetId() << " received request " << msg << std::endl;
+            //if (node->GetId() == 6) std::cout << node->GetId() << " received request " << msg << std::endl;
         }
     }
     // Received position
-    else if(msg[0] == 'P'){
+    else if (msg[0] == 'P') {
         sendPosition newPosition = deserializePositionInfo(msg);
         // Record who sent the info
         std::chrono::milliseconds ms =
@@ -40,30 +41,30 @@ void ReceivePacket(Ptr<Socket> socket){
         globalInfo::allAgents.at(node->GetId()).agent->lastTimeHeardFrom[newPosition.senderId] = ms.count();
         // Add position to info
         globalInfo::allAgents.at(node->GetId()).agent->receivedPositions.push_back(newPosition);
-        //if((node->GetId() == 1 && newPosition.senderId == 3) || (node->GetId() == 3 && newPosition.senderId == 1))
-        if(node->GetId() == 6) std::cout << node->GetId() << " received position " << msg << std::endl;
+        //if ((node->GetId() == 1 && newPosition.senderId == 3) || (node->GetId() == 3 && newPosition.senderId == 1))
+        //if (node->GetId() == 6) std::cout << node->GetId() << " received position " << msg << std::endl;
     }
 }
 
-void SendMessage(const char* data, int sizeOfMessage, Ptr<Node> sourceNode, Ptr<Node> desitinationNode, Ipv4InterfaceContainer interface){
+void SendMessage(const char* data, int sizeOfMessage, Ptr<Node> sourceNode, Ptr<Node> desitinationNode, Ipv4InterfaceContainer interface) {
     TypeId id = UdpSocketFactory::GetTypeId ();
     Ptr<Socket> source = Socket::CreateSocket (sourceNode, id);
     InetSocketAddress remote = InetSocketAddress (interface.GetAddress(desitinationNode->GetId()), 80);
-    if(source->Connect(remote) == -1){
+    if (source->Connect(remote) == -1) {
         std::cout << "Error connecting" << std::endl;
         return;
     }
     Ptr<Packet> packet = Create<Packet>(reinterpret_cast<const uint8_t*>(data), sizeOfMessage);
-    if(source->Send(packet) == -1){
+    if (source->Send(packet) == -1) {
         std::cout << "Error sending" << std::endl;
         return;
     }
     
     //std::cout << "sending " << data << " from " << sourceNode->GetId() << " to " << desitinationNode->GetId() << std::endl;
-    if(sourceNode->GetId() == 6) std::cout << "sending " << data << " from " << sourceNode->GetId() << " to " << desitinationNode->GetId() << std::endl;
+    //if (sourceNode->GetId() == 6) std::cout << "sending " << data << " from " << sourceNode->GetId() << " to " << desitinationNode->GetId() << std::endl;
 }
 
-char* serializePositionInfo(sendPosition position){
+char* serializePositionInfo(sendPosition position) {
     std::string serialized = "";
     serialized += "P@";
     serialized += to_string(position.senderId);
@@ -85,7 +86,7 @@ char* serializePositionInfo(sendPosition position){
     return cstr;
 }
 
-sendPosition deserializePositionInfo(std::string serialized){
+sendPosition deserializePositionInfo(std::string serialized) {
     sendPosition newPosition;
     // Split on @ delimeter
     std::string temp;
@@ -106,16 +107,16 @@ sendPosition deserializePositionInfo(std::string serialized){
     return newPosition;
 }
 
-char* serializeRequestInfo(sendRequest request){
+char* serializeRequestInfo(sendRequest request) {
     std::string serialized = "";
     serialized += "R@";
     serialized += to_string(request.senderId);
     serialized += "@";
-    for(unsigned long int i = 0; i < globalInfo::allAgents.size(); i++){
-        if(request.request[i] == 1){
+    for (unsigned long int i = 0; i < globalInfo::allAgents.size(); i++) {
+        if (request.request[i] == 1) {
             serialized += "1";
         }
-        else if(request.request[i] == 0){
+        else if (request.request[i] == 0) {
             serialized += "0";
         }
     }
@@ -129,7 +130,7 @@ char* serializeRequestInfo(sendRequest request){
     return cstr;
 }
 
-sendRequest deserializeRequestInfo(std::string serialized){
+sendRequest deserializeRequestInfo(std::string serialized) {
     sendRequest newRequest;
     std::string temp;
     size_t pos = 0;
@@ -143,7 +144,7 @@ sendRequest deserializeRequestInfo(std::string serialized){
     newRequest.senderId = stoi(items.at(1));
     // Extract requests
     bool* requestToSend = new bool[globalInfo::allAgents.size()];
-    for(unsigned long int i = 0; i < globalInfo::allAgents.size(); i++){
+    for (unsigned long int i = 0; i < globalInfo::allAgents.size(); i++) {
         requestToSend[i] = (int)(items.at(2)[i]) - '0';
     }
     newRequest.request = requestToSend;
@@ -152,51 +153,51 @@ sendRequest deserializeRequestInfo(std::string serialized){
     return newRequest;
 }
 
-bool requestsAreNull(char* serializedMessage){
-    for(int i = 0; serializedMessage[i] != '\0'; i++){
-        if(serializedMessage[i] == '1') return false;
+bool requestsAreNull(char* serializedMessage) {
+    for (int i = 0; serializedMessage[i] != '\0'; i++) {
+        if (serializedMessage[i] == '1') return false;
     }
     return true;
 }
 
-long int hashedRequest(sendRequest thisRequest){
+long int hashedRequest(sendRequest thisRequest) {
     int requestArray = 0;
-    for(int i = 0; i < globalInfo::numAgents; i++){
-        if(thisRequest.request) requestArray += pow(2, i);
+    for (int i = 0; i < globalInfo::numAgents; i++) {
+        if (thisRequest.request) requestArray += pow(2, i);
     }
     return ((long int)thisRequest.senderId << globalInfo::numAgents) + requestArray;
 }
 
-bool alreadySentRequest(AgentNode &sender, int destinationId, sendRequest message){
-    for(int i = 0; i < sender.agent->numAgents; i++){
-        if(sender.agent->sentRequests[destinationId][message.senderId] == hashedRequest(message)){
+bool alreadySentRequest(AgentNode &sender, int destinationId, sendRequest message) {
+    for (int i = 0; i < sender.agent->numAgents; i++) {
+        if (sender.agent->sentRequests[destinationId][message.senderId] == hashedRequest(message)) {
             return true;
         }
     }
     return false;
 }
 
-void sendRequestInfo(AgentNode &sender, AgentNode &receiver, Ipv4InterfaceContainer interface){
+void sendRequestInfo(AgentNode &sender, AgentNode &receiver, Ipv4InterfaceContainer interface) {
     // // Drop if node is not one hop
-    // if(!sender.agent->agentIsOneHop(receiver.agent->agentId)){
+    // if (!sender.agent->agentIsOneHop(receiver.agent->agentId)) {
     //     return;
     // }
     // Send all requests in request vector
-    for(unsigned long int i = 0; i < sender.agent->receivedRequests.size(); i++){
+    for (unsigned long int i = 0; i < sender.agent->receivedRequests.size(); i++) {
         sendRequest message = sender.agent->receivedRequests.at(i);
         // Don't send if request is for itself to itself
-        if((message.senderId == sender.agent->agentId)
-                && (i != sender.agent->receivedRequests.size() - 1)){
+        if ((message.senderId == sender.agent->agentId)
+                && (i != sender.agent->receivedRequests.size() - 1)) {
             continue;
         }
         // Don't send if request is to who sent it
-        if(message.senderId == receiver.agent->agentId){
+        if (message.senderId == receiver.agent->agentId) {
             continue;
         }
         // If message is its own request message, make true for request. Reset later
         bool flippedRequest = false;
-        if(message.senderId == sender.agent->agentId){
-            if(!sender.agent->neededInfo[receiver.agent->agentId] && sender.agent->positionsToAsk[receiver.agent->agentId]){
+        if (message.senderId == sender.agent->agentId) {
+            if (!sender.agent->neededInfo[receiver.agent->agentId] && sender.agent->positionsToAsk[receiver.agent->agentId]) {
                 message.request[receiver.agent->agentId] = true;
                 flippedRequest = true;
             }
@@ -204,27 +205,27 @@ void sendRequestInfo(AgentNode &sender, AgentNode &receiver, Ipv4InterfaceContai
         // Serialize message
         char* serializedMessage = serializeRequestInfo(message);
         int messageSize = 0;
-        for(int j = 0; serializedMessage[j] != '\0'; j++){
+        for (int j = 0; serializedMessage[j] != '\0'; j++) {
             messageSize++;
         }
         // Reset request
-        if(flippedRequest){
+        if (flippedRequest) {
             message.request[receiver.agent->agentId] = false;
         }
         // Check if no requests
-        if(requestsAreNull(serializedMessage)) continue;
+        if (requestsAreNull(serializedMessage)) continue;
         // Check if already sent request. Drop stochastically
-        if(alreadySentRequest(sender, receiver.agent->agentId, message)){
+        if (alreadySentRequest(sender, receiver.agent->agentId, message)) {
             int randNum = rand() % 100;
-            if(randNum < globalInfo::probabilityDropped){
+            if (randNum < globalInfo::probabilityDropped) {
                 continue;
             }
         }
         // Send request
         // If request is one hop, send for sure, else, stochastically send
-        if(message.numHops > 0){
+        if (message.numHops > 0) {
             int randNum = rand() % 100;
-            if(randNum < globalInfo::probabilityDropped){
+            if (randNum < globalInfo::probabilityDropped) {
                 continue;
             }
         }
@@ -236,51 +237,51 @@ void sendRequestInfo(AgentNode &sender, AgentNode &receiver, Ipv4InterfaceContai
     }
 }
     
-void printDebug(vector<vector<size_t>> input){
-    for(long unsigned int i = 0; i < input.size(); i++){
-        for(long unsigned int j = 0; j < input.at(i).size(); j++){
+void printDebug(vector<vector<size_t>> input) {
+    for (long unsigned int i = 0; i < input.size(); i++) {
+        for (long unsigned int j = 0; j < input.at(i).size(); j++) {
             std::cout << input.at(i).at(j) << " : ";
         }
         std::cout << std::endl;
     }
 }
 
-double hashedPosition(sendPosition thisPosition){
+double hashedPosition(sendPosition thisPosition) {
     return thisPosition.position.x + thisPosition.position.y + thisPosition.position.z;
 }
 
-bool alreadySentInfo(AgentNode &sender, int destinationId, sendPosition message){
-    if(sender.agent->sentPositions[destinationId][message.infoId] == hashedPosition(message)){
+bool alreadySentInfo(AgentNode &sender, int destinationId, sendPosition message) {
+    if (sender.agent->sentPositions[destinationId][message.infoId] == hashedPosition(message)) {
         return true;
     }
     return false;
 }
 
-void sendPositionInfo(AgentNode &sender, AgentNode &receiver, int whichAgent, Ipv4InterfaceContainer interface){
+void sendPositionInfo(AgentNode &sender, AgentNode &receiver, int whichAgent, Ipv4InterfaceContainer interface) {
     sendPosition toSend = sender.agent->createSendPosition(whichAgent);
     char* serializedMessage = serializePositionInfo(toSend);
     int messageSize = 0;
-    for(int i = 0; serializedMessage[i] != '\0'; i++){
+    for (int i = 0; serializedMessage[i] != '\0'; i++) {
         messageSize++;
     }
     // Don't send if info is for node that we would send to
-    if(toSend.infoId == receiver.agent->agentId) return;
+    if (toSend.infoId == receiver.agent->agentId) return;
     // If already sent same info to same destination previously, don't send stochastically
-    if(alreadySentInfo(sender, receiver.agent->agentId, toSend)){
+    if (alreadySentInfo(sender, receiver.agent->agentId, toSend)) {
         int randNum = rand() % 100;
-        if(randNum < globalInfo::probabilityDropped){
+        if (randNum < globalInfo::probabilityDropped) {
             return;
         }
     }
     // Drop stochastically if not sending directly to agent who requested
-    if(sender.agent->agentId != whichAgent){
+    if (sender.agent->agentId != whichAgent) {
         int randNum = rand() % 100;
-        if(randNum < globalInfo::probabilityDropped){
+        if (randNum < globalInfo::probabilityDropped) {
             return;
         }
     }
     // Drop if node is not one hop
-    // if(!sender.agent->agentIsOneHop(receiver.agent->agentId)){
+    // if (!sender.agent->agentIsOneHop(receiver.agent->agentId)) {
     //     return;
     // }
     // Send
@@ -295,16 +296,16 @@ void sendPositionInfo(AgentNode &sender, AgentNode &receiver, int whichAgent, Ip
 ///////////////////////////////////////////////////////////////////////////
 // Merge related functions
 
-void mergeReceivedRequests(Agent *ag){
-    for(unsigned long int i = 0; i < ag->receivedRequests.size(); i++){
+void mergeReceivedRequests(Agent *ag) {
+    for (unsigned long int i = 0; i < ag->receivedRequests.size(); i++) {
         int whoSent = ag->receivedRequests.at(i).senderId;
-        for(unsigned long int j=0; j < globalInfo::allAgents.size(); j++){
+        for (unsigned long int j=0; j < globalInfo::allAgents.size(); j++) {
             // Need to setup who requested matrix
-            if (ag->receivedRequests.at(i).request[j]){
+            if (ag->receivedRequests.at(i).request[j]) {
                 ag->infoRequests[j] = true;
                 ag->whoRequested[whoSent][j] = true;
             }
-            else{
+            else {
                 // Fill in who request matrix with false
                 ag->whoRequested[whoSent][j] = false;
             }
@@ -314,18 +315,12 @@ void mergeReceivedRequests(Agent *ag){
     ag->receivedRequests.clear();
 }
 
-void mergeAllReceivedRequests(std::vector<AgentNode> &allAgents){
-    for (unsigned long int i = 0; i < globalInfo::allAgents.size(); i++){
-        mergeReceivedRequests(allAgents[i].agent);
-    }
-}
-
-void mergeReceivedPositions(Agent *ag){
-    for(unsigned long int i = 0; i < ag->receivedPositions.size(); i++){
+void mergeReceivedPositions(Agent *ag) {
+    for (unsigned long int i = 0; i < ag->receivedPositions.size(); i++) {
         int whoSent = ag->receivedPositions.at(i).senderId;
         int otherAgentId = ag->receivedPositions.at(i).infoId;
-        if (ag->receivedTimes[otherAgentId] < ag->receivedPositions.at(i).timeSent){
-            // if(ag->agentId == 1)  (std::cout << "updated " << ag->receivedPositions.at(i).infoId << " to "
+        if (ag->receivedTimes[otherAgentId] < ag->receivedPositions.at(i).timeSent) {
+            // if (ag->agentId == 1)  (std::cout << "updated " << ag->receivedPositions.at(i).infoId << " to "
             //             << ag->receivedPositions.at(i).position <<std::endl);
             ag->knownInfo[otherAgentId] = true;
             ag->previousKnownPositions[otherAgentId] = ag->knownPositions[otherAgentId];
@@ -350,42 +345,43 @@ void mergeReceivedPositions(Agent *ag){
 ///////////////////////////////////////////////////////////////////////////
 // Not needed but useful for debugging
 
-bool requestsEqual(sendRequest request1, sendRequest request2){
+bool requestsEqual(sendRequest request1, sendRequest request2) {
     bool idEqual = request1.senderId == request2.senderId;
-    for(unsigned long int i = 0; i < globalInfo::allAgents.size(); i++){
-        if(request1.request[i] != request2.request[i]){
+    for (unsigned long int i = 0; i < globalInfo::allAgents.size(); i++) {
+        if (request1.request[i] != request2.request[i]) {
             return false;
         }
     }
     return idEqual;
 }
 
-bool isNewRequest(vector<sendRequest> allRequests, sendRequest request){
-    for(unsigned long int i = 0; i < allRequests.size(); i++){
-        if(requestsEqual(allRequests.at(i), request)){
+bool isNewRequest(vector<sendRequest> allRequests, sendRequest request) {
+    for (unsigned long int i = 0; i < allRequests.size(); i++) {
+        if (requestsEqual(allRequests.at(i), request)) {
             return false;
         }
     }
     return true;
 }
 
-// bool positionsEqual(sendPosition position1, sendPosition position2){
+// bool positionsEqual(sendPosition position1, sendPosition position2) {
 //     bool idsEqual = (position1.infoId == position2.infoId)
 //                 && (position1.senderId == position2.senderId);
-//     for(unsigned long int i = 0; i < globalInfo::allAgents.size(); i++){
-//         if(position1.request[i] != position2.request[i]){
+//     for (unsigned long int i = 0; i < globalInfo::allAgents.size(); i++) {
+//         if (position1.request[i] != position2.request[i]) {
 //             return false;
 //         }
 //     }
 //     return idEqual;
 // }
 
-bool isNewPosition(vector<sendRequest> allRequests, sendRequest request){
-    for(unsigned long int i = 0; i < allRequests.size(); i++){
-        if(requestsEqual(allRequests.at(i), request)){
+bool isNewPosition(vector<sendRequest> allRequests, sendRequest request) {
+    for (unsigned long int i = 0; i < allRequests.size(); i++) {
+        if (requestsEqual(allRequests.at(i), request)) {
             return false;
         }
     }
     return true;
-}
+} 
+
 } // End namespace ne3

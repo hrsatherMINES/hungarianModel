@@ -9,7 +9,16 @@ namespace ns3 {
     int globalInfo::numTasks;
     int globalInfo::probabilityDropped;
     int globalInfo::numMoves;
-    int globalInfo::counter;
     int globalInfo::totalMessagesReceived;
+    int globalInfo::testNumber;
+    int globalInfo::minPosition;
+    int globalInfo::maxPosition;
     double globalInfo::maxPositionDistance;
+
+    // Variables to compute average
+    int globalInfo::totalNumRequestMessages;
+    int globalInfo::totalNumPositionMessages;
+    double globalInfo::totalPercentageReceived;
+    int globalInfo::totalNumberConflicts;
+    double globalInfo::totalPercentOptimal;
 }

@@ -9,18 +9,20 @@
 #include "ns3/debuggingFunctions.h"
 
 namespace ns3 {
+
     void calculateAllCosts(std::vector<TaskNode> &allTasks, std::vector<AgentNode> &allAgents);
     void fillAllLocalCosts(std::vector<AgentNode> &allAgents);
     void initializeAllRequests(std::vector<AgentNode> &allAgents);
     void addOwnRequestToRequestList(std::vector<AgentNode> &allAgents);
-    void allSendRequestsScheduled(std::vector<AgentNode> &allAgents, std::vector<TaskNode> &allTasks, Ipv4InterfaceContainer interface);
-    void allSendPositionInfoScheduled(std::vector<AgentNode> &allAgents, std::vector<TaskNode> &allTasks, Ipv4InterfaceContainer interface);
+    void allSendRequests(std::vector<AgentNode> &allAgents, std::vector<TaskNode> &allTasks, Ipv4InterfaceContainer interface);
+    void allSendPositionInfo(std::vector<AgentNode> &allAgents, std::vector<TaskNode> &allTasks, Ipv4InterfaceContainer interface);
     void computeAllParitalAssignmentsHungarian(std::vector<AgentNode> &allAgents, std::vector<TaskNode> &allTasks);
     void determineAssignedLocation(std::vector<AgentNode> &allAgents, std::vector<TaskNode> &allTasks);
     void moveAllAgentsTowardsGoalStep(std::vector<AgentNode> &allAgents);
     void mergeAllPositionInfo(std::vector<AgentNode> &allAgents, std::vector<TaskNode> allTasks, Ipv4InterfaceContainer interface);
     void calculateCostsAndPrepareRequests(std::vector<AgentNode> &allAgents, std::vector<TaskNode> &allTasks, Ipv4InterfaceContainer interface);
     void processAndMove(std::vector<AgentNode> &allAgents, std::vector<TaskNode> allTasks, Ipv4InterfaceContainer interface);
+    void mergeAllReceivedRequests(std::vector<AgentNode> &allAgents, std::vector<TaskNode> allTasks, Ipv4InterfaceContainer interface);
     
     // New heuristics
     void determineAllNeededInfoOriginal(std::vector<AgentNode> &allAgents);
@@ -32,6 +34,7 @@ namespace ns3 {
     void determineAllNeededInfoInferTask(std::vector<AgentNode> &allAgents);
     void determineAllNeededInfoInferTaskAndMoving(std::vector<AgentNode> &allAgents);
     void determineAllNeededInfoOneHop(std::vector<AgentNode> &allAgents);
+    
 }
 
 #endif /* NEWMETHOD_H */

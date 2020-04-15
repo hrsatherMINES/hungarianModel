@@ -9,12 +9,13 @@
 
 namespace ns3 {
 
-    class Agent{
+    class Agent {
         public:
 
         // Agent state
         int agentId;
         Vector agentPosition;
+        Vector originalPosition;
         Vector assignedTaskPosition;
         Vector previousAssignedTaskPosition;
         Vector movementVector;
@@ -39,7 +40,6 @@ namespace ns3 {
         bool* neededInfo;  // To keep track of what needed personally
         bool* positionsToAsk;
         bool* infoRequests;  // To store request to
-        bool* previousSentRequest;
         bool* knownInfo;
         bool* whichPositionsToSend;  // Will act as a message buffer
         Vector* knownPositions;
@@ -88,6 +88,19 @@ namespace ns3 {
         void initializePreviousAssignedTaskPosition();
         bool assignmentChanged();
         bool agentIsOneHop(int whichAgent);
+        double distanceOfOptimal();
+        // Resetting
+        void resetInfoRequests();
+        void resetLastTimeHeardFrom();
+        void resetKnownInfo();
+        void resetReceivedTimes();
+        void resetNeededInfo();
+        void resetPositionsToAsk();
+        void resetSentPositions();
+        void resetSentRequests();
+        void resetKnownPositions();
+        void resetPreviousKnownPositions();
+        void resetPartialAssignment();
 
         // Different heuristics
         void determineNeededInfoOriginal();

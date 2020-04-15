@@ -8,8 +8,7 @@
 using namespace std;
 
 
-class HungarianAlgorithm
-{
+class HungarianAlgorithm {
 public:
 	HungarianAlgorithm();
 	~HungarianAlgorithm();

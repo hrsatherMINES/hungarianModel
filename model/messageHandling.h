@@ -9,6 +9,7 @@
 #include <thread>
 
 namespace ns3 {
+
     void ReceivePacket(Ptr<Socket> socket);
     void SendMessage(const char* data, int sizeOfMessage, Ptr<Node> sourceNode, Ptr<Node> desitinationNode, Ipv4InterfaceContainer interface);
     char* serializePositionInfo(sendPosition position);
@@ -28,6 +29,7 @@ namespace ns3 {
     bool requestsAreNull(char* serializedMessage);
     bool alreadySentInfo(AgentNode &sender, int destinationId, sendPosition message);
     double hashedPosition(sendPosition thisPosition);
+    
 }
 
 #endif /* AGENT_H */
